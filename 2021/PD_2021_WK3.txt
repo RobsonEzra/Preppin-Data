@@ -1,0 +1,34 @@
+WITH T AS(
+    SELECT
+    	QUARTER("Date") AS "Quarter",
+        TRIM(SPLIT_PART("New/Existing",'-',1)) AS "Customer Type",
+        TRIM(SPLIT_PART("New/Existing",'-',2)) AS "Product",
+        "Products Sold",
+        "Store"
+    FROM(
+        SELECT
+        	*
+        FROM
+        	RA_PD_2021_WK3
+        UNPIVOT ("Products Sold" FOR "New/Existing" IN ("New - Saddles","New - Wheels","New - Bags","New - Mudguards","Existing - Saddles",
+        		"Existing - Mudguards","Existing - Bags","Existing - Wheels"))
+        )
+)
+
+SELECT //OUTPUT 1
+	"Product",
+    "Quarter",
+    SUM(CAST("Products Sold" AS INT)) AS "Products Sold"
+FROM
+	T
+GROUP BY ("Product","Quarter");
+
+
+SELECT //OUTPUT 2
+	"Store",
+    "Customer Type",
+    "Product",
+    SUM(CAST("Products Sold" AS INT)) AS "Products Sold"
+FROM
+	T
+GROUP BY ("Store","Customer Type","Product");
