@@ -1,0 +1,9 @@
+    SELECT
+    	"BIKE_TYPE" AS "Bike Type",
+    	REGEXP_SUBSTR("MODEL",'[A-Z]+') AS "Brand",
+        SUM(CAST("QUANTITY" AS INT)) AS "Quantity Sold",
+        SUM(CAST("QUANTITY" AS INT) * CAST("QUANTITY" AS INT)) AS "Order Value",
+        ROUND(AVG(CAST("VALUE_PER_BIKE" AS INT)),1) AS "Avg Bike Value Sold per Brand, Type"
+    FROM
+    	RA_PD_2021_WK2
+    GROUP BY ("Bike Type","Brand");
