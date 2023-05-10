@@ -1,0 +1,11 @@
+SELECT
+    "Animal Type",
+    ROUND(SUM(IFF("Outcome Type" = 'Adoption' OR "Outcome Type" = 'Return to Owner' OR "Outcome Type" = 'Transfer',1,0))
+    / COUNT("Animal ID")*100,1) AS "Adopted, Returned to Owner or Transferred",
+    ROUND((1-(SUM(IFF("Outcome Type" = 'Adoption' OR "Outcome Type" = 'Return to Owner' OR "Outcome Type" = 'Transfer',1,0))
+    / COUNT("Animal ID")))*100,1) AS "Other"
+FROM
+    RA_PD_2021_WK40
+WHERE "Animal Type" = 'Cat' OR "Animal Type" = 'Dog'
+GROUP BY("Animal Type")
+ORDER BY "Adopted, Returned to Owner or Transferred" DESC

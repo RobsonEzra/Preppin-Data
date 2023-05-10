@@ -1,0 +1,61 @@
+SELECT * FROM "RA_PD_2021_WK45_A";
+
+WITH JT AS (
+SELECT
+    T1.* EXCLUDE ("VALUE"),
+    T2.*
+FROM(
+    SELECT
+        TO_TIMESTAMP( CONCAT("Date",' ',LPAD(CASE
+                                            WHEN CONTAINS("Session Time",':') THEN "Session Time"
+                                            ELSE CONCAT("Session Time",':00:00') END ,8,'0')), 'YYYY-MM-DD HH24:MI:SS') AS "DateTime",
+        * EXCLUDE("Date","Session Time","Attendee IDs","SEQ","INDEX")
+    FROM(
+        SELECT
+            '2021-11-10' AS "Date",
+            *
+        FROM
+            "RA_PD_2021_WK45_10th"
+        UNION ALL
+        SELECT
+            '2021-11-11',
+            *
+        FROM
+            "RA_PD_2021_WK45_11th"
+        UNION ALL
+        SELECT
+            '2021-11-12',
+            *
+        FROM
+            "RA_PD_2021_WK45_12th"
+    ), LATERAL SPLIT_TO_TABLE("Attendee IDs",', ') )AS T1
+INNER JOIN
+        (
+            SELECT
+                *
+            FROM
+                RA_PD_2021_WK45_A
+        ) AS T2
+ON(T1."VALUE" = T2."Attendee ID")
+)
+
+
+
+SELECT
+    *
+FROM
+    (
+        SELECT
+            *
+        FROM
+            JT
+    ) AS T1
+INNER JOIN
+        (
+            SELECT
+                *
+            FROM
+                JT
+        ) AS T2
+ON (T1."DateTime" = T2."DateTime")
+WHERE T1."Attendee" != T2."Attendee"

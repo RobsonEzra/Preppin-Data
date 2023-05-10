@@ -1,0 +1,43 @@
+SELECT
+	"Cocktail",
+    MAX("Price per cocktail") AS "Price",
+    ROUND(SUM("Cost" * 1/CAST("Conversion Rate £" AS FLOAT)),2) AS "Cost",
+    MAX("Price per cocktail") - ROUND(SUM("Cost" * 1/CAST("Conversion Rate £" AS FLOAT)),2) AS "Margin"
+FROM
+	(
+    SELECT
+    	*
+    FROM(
+    		SELECT
+        		"Ingredient",
+                "Price" AS "Price per bottle",
+                "ml per Bottle",
+                "Currency",
+                "Cocktail",
+                "Price (£)" AS "Price per cocktail",
+                split_part("VALUE",':',1) AS "Needed Ingredient",
+                CAST(TRIM(split_part("VALUE",':',2),'ml') AS INT) AS "Needed ml",
+                CAST(TRIM(split_part("VALUE",':',2),'ml') AS INT)/CAST("ml per Bottle" AS INT) * CAST("Price per bottle" AS FLOAT) AS "Cost"
+                
+                
+        	FROM
+        		RA_PD_2021_WK11_S
+            CROSS JOIN
+            	(
+                	SELECT
+        				*
+       				FROM
+        				RA_PD_2021_WK11_C, LATERAL SPLIT_TO_TABLE("Recipe (ml)",'; ')
+                )
+    )
+    WHERE "Needed Ingredient" = "Ingredient"
+) AS T1
+INNER JOIN
+		(
+        SELECT
+        	*
+        FROM
+        	RA_PD_2021_WK11_CR
+        ) AS T2
+ON (T1."Currency" = T2."Currency")
+GROUP BY("Cocktail");

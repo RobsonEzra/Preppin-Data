@@ -1,0 +1,45 @@
+SELECT
+	RANK() OVER (PARTITION BY "AREA" ORDER BY CAST("QUANTITY" AS INT) * CAST(RIGHT("Price",4) AS FLOAT) DESC) AS "RANK",
+	"AREA",
+    "Product Name" AS "PRODUCT_NAME",
+    ROUND(CAST("QUANTITY" AS INT) * CAST(RIGHT("Price",4) AS FLOAT),0) AS "REVENUE",
+    	ROUND(CAST("QUANTITY" AS INT) * CAST(RIGHT("Price",4) AS FLOAT) 
+        / SUM(CAST("QUANTITY" AS INT) * CAST(RIGHT("Price",4) AS FLOAT)) OVER (PARTITION BY "AREA") * 100,2)
+        AS "% of Total - Product"
+    
+FROM(
+    SELECT
+        SUM("QUANTITY") AS "QUANTITY",
+        "PRODUCT_ID",
+        "Area" AS "AREA"
+    FROM(
+        SELECT
+        	LEFT("VALUE",6) AS "ID",
+            "VALUE",
+            REGEXP_SUBSTR("VALUE",'.*,(\\d{2}).*',1,1,'e') AS "AREA_CODE",
+            REGEXP_SUBSTR("VALUE",'.*,\\d{2}(\\w).*',1,1,'e') AS "AREA_L",
+            REGEXP_SUBSTR("VALUE",'.*,\\d{2}\\w(\\d+?)-.*',1,1,'e') AS "QUANTITY",
+            REGEXP_SUBSTR("VALUE",'.*,\\d{2}\\w\\d+?-(\\w+?)',1,1,'e') AS "PRODUCT_ID"
+        FROM
+        	RA_PD_2021_WK9_CI, LATERAL split_to_table("IDs",' ')
+        ) AS T1
+    INNER JOIN
+    		(
+            	SELECT
+                	RIGHT("Code",2) AS "CODE",
+                    LEFT("Area",1) AS "AREA_L",
+                    "Area"
+                FROM RA_PD_2021_WK9_ACL
+            ) AS T2
+    ON (T1."AREA_CODE" = T2."CODE" AND T1."AREA_L" = T2."AREA_L")
+    GROUP BY ("PRODUCT_ID","AREA")
+) AS T3
+INNER JOIN
+		(
+			SELECT
+            	*
+            FROM
+            	RA_PD_2021_WK9_PL
+        ) AS T4
+ON (T3."PRODUCT_ID" = T4."Product ID")
+WHERE "AREA" != 'Clevedon' AND "AREA" != 'Fakenham' AND "AREA" != 'Stornoway';

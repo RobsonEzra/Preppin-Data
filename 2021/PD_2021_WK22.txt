@@ -1,0 +1,37 @@
+    SELECT
+    	C.*,
+        Q.* EXCLUDE "Category",
+    	TAS.* EXCLUDE "Q No",
+        N.*
+    FROM(
+        SELECT
+        	SPLIT_PART("Category: Answer",': ',1) AS "Category",
+            SPLIT_PART("Category: Answer",': ',2) AS "Answer"
+        FROM
+        	RA_PD_2021_WK22_C
+        ) AS C
+    INNER JOIN
+    		(
+            SELECT
+            	*
+            FROM
+            	RA_PD_2021_WK22_Q
+            ) AS Q
+    INNER JOIN
+    		(
+            SELECT
+            	*
+            FROM
+            	RA_PD_2021_WK22_AS
+            ) AS TAS
+    ON (C."Category" = Q."Category" AND Q."Q No" = TAS."Q No")
+    CROSS JOIN
+    
+    		(
+            SELECT
+            	*
+            FROM
+            	RA_PD_2021_WK22_N
+            ) AS N
+    
+    WHERE CONTAINS("Answer Smash","Name") AND CONTAINS(LOWER("Answer Smash"),LOWER("Answer"))

@@ -1,0 +1,47 @@
+SELECT
+    *,
+    RANK() OVER (PARTITION BY "metric" ORDER BY "raw_value" DESC) AS "scaled_value"
+FROM
+    (
+    SELECT
+        *
+    FROM(
+        SELECT
+            "name",
+            CAST(MAX("number_of_events") AS FLOAT) "number_of_events",
+            CAST(SUM("prize_usd") AS FLOAT) AS "total_prize_money",
+            CAST(MAX("biggest_win")AS FLOAT) AS "biggest_win",
+            CAST(MAX("percent_won")AS FLOAT) AS "percent_won",
+            CAST(MAX("countries_visited")AS FLOAT) AS "countries_visited",
+            CAST(MAX("career_length")AS FLOAT) AS "career_length"
+        FROM(
+            SELECT
+                T.* EXCLUDE("player_url","source","last_updated"),
+                PE.* EXCLUDE ("player_id","source","last_updated","player_place"),
+                REGEXP_SUBSTR(PE."player_place",'(\\d+?)\\w+',1,1,'e') AS "Position",
+                COUNT("event_date") OVER (PARTITION BY T."player_id") AS "number_of_events",
+                MAX("prize_usd") OVER (PARTITION BY T."player_id") AS "biggest_win",
+                SUM( CASE WHEN REGEXP_SUBSTR(PE."player_place",'(\\d+?)\\w+',1,1,'e') = 1 THEN 1 ELSE NULL END) OVER (PARTITION BY T."player_id") / COUNT("player_place") OVER (PARTITION BY T."player_id") AS "percent_won",
+                COUNT(DISTINCT "event_country") OVER (PARTITION BY T."player_id") AS "countries_visited",
+                DATEDIFF('year',MIN("event_date") OVER (PARTITION BY T."player_id"),MAX("event_date") OVER (PARTITION BY T."player_id")) AS "career_length"
+                
+            FROM(
+                SELECT 
+                    *
+                FROM 
+                    RA_PD_2021_WK47_PE
+                ) AS PE
+            INNER JOIN
+                    (
+                        SELECT
+                            *
+                        FROM
+                            RA_PD_2021_WK47_T
+                    ) AS T
+            ON (PE."player_id" = T."player_id")
+        )
+        GROUP BY ("name")
+    )
+    UNPIVOT ("raw_value" FOR "metric" IN ("number_of_events","total_prize_money","biggest_win","percent_won","countries_visited","career_length"))
+)
+ORDER BY ("name","metric")

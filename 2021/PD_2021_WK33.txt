@@ -1,0 +1,34 @@
+
+SELECT
+    CASE
+        WHEN "Reporting Date" = "Min Date" THEN 'New Order'
+        WHEN "Reporting Date" >= "Order fulfilled by" THEN 'Fulfilled'
+        ELSE 'Unfulfilled Order' END AS "Order Status",
+    * EXCLUDE ("Min Date","Order fulfilled by")
+FROM(
+    SELECT
+        "Orders",
+        "Sale Date",
+        TO_DATE("Reporting Date",'DD/MM/YYYY') AS "Reporting Date",
+        MIN(TO_DATE("Reporting Date",'DD/MM/YYYY')) OVER (PARTITION BY "Orders" ) AS "Min Date",
+        DATEADD('week',1,MAX(TO_DATE("Reporting Date",'DD/MM/YYYY')) OVER (PARTITION BY "Orders" )) AS "Order fulfilled by"
+    FROM
+        RA_PD_2021_WK33
+)
+
+UNION
+SELECT
+    * EXCLUDE ("Max Date","Old Reporting Date","Table Max Date")
+FROM(
+    SELECT
+        'Fulfilled' AS "Order Status",
+        "Orders",
+        "Sale Date",
+        MAX(TO_DATE("Reporting Date",'DD/MM/YYYY')) OVER (PARTITION BY "Orders") AS "Max Date",
+        TO_DATE("Reporting Date",'DD/MM/YYYY') AS "Old Reporting Date",
+        DATEADD('week',1,MAX(TO_DATE("Reporting Date",'DD/MM/YYYY')) OVER (PARTITION BY "Orders" )) AS "Reporting Date",
+        MAX(TO_DATE("Reporting Date",'DD/MM/YYYY')) OVER () AS "Table Max Date"
+    FROM
+        RA_PD_2021_WK33
+)
+WHERE "Max Date" = "Old Reporting Date" AND "Max Date" != "Table Max Date"

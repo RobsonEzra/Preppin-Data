@@ -1,0 +1,68 @@
+WITH JT AS(
+    SELECT
+        *
+    FROM(
+        SELECT
+            *
+        FROM(
+            SELECT
+                F1 AS "Lewisham",
+                F2 AS "2020",
+                F3 AS "2021"
+            FROM
+                RA_PD_2021_WK48
+            LIMIT 3 OFFSET 1
+            )
+            UNPIVOT ("True Value" FOR "Recorded Year" IN ("2020","2021"))
+        )
+        UNPIVOT ("Clean Measure names" FOR "Branch" IN ("Lewisham"))
+UNION ALL
+    SELECT
+        *
+    FROM(
+        SELECT
+            *
+        FROM(
+            SELECT
+                F1 AS "Wimbledon",
+                F2 AS "2020",
+                F3 AS "2021"
+            FROM
+                RA_PD_2021_WK48
+            LIMIT 3 OFFSET 6
+            )
+            UNPIVOT ("True Value" FOR "Recorded Year" IN ("2020","2021"))
+        )
+        UNPIVOT ("Clean Measure names" FOR "Branch" IN ("Wimbledon"))
+UNION ALL
+    SELECT
+        *
+    FROM(
+        SELECT
+            *
+        FROM(
+            SELECT
+                F1 AS "York",
+                F2 AS "2020",
+                F3 AS "2021"
+            FROM
+                RA_PD_2021_WK48
+            LIMIT 3 OFFSET 11
+            )
+            UNPIVOT ("True Value" FOR "Recorded Year" IN ("2020","2021"))
+        )
+        UNPIVOT ("Clean Measure names" FOR "Branch" IN ("York"))
+)
+
+SELECT
+    "Branch",
+    CASE
+        WHEN CONTAINS("Clean Measure names",'(') THEN REGEXP_SUBSTR("Clean Measure names",'(.*) \\(.*',1,1,'e')
+        ELSE "Clean Measure names" END AS "Clean Measure names",
+    "Recorded Year",
+    CASE
+        WHEN CONTAINS("Clean Measure names",'k') THEN CAST("True Value" AS FLOAT) * 1000
+        WHEN CONTAINS("Clean Measure names",'m') THEN CAST("True Value" AS FLOAT) *1000000
+        ELSE CAST("True Value" AS FLOAT) END AS "True Value"
+FROM
+    JT;

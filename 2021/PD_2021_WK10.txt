@@ -1,0 +1,37 @@
+SELECT
+    CASE
+        WHEN 	"Evolving from" = LAG("Evolving to",1) OVER (ORDER BY "NO.") THEN LAG("Name",1) OVER (ORDER BY "NO.")
+        WHEN 	"Evolving from" = "Name" THEN "Name"
+        WHEN 	"Name" = LAG("Evolving to",1) OVER (ORDER BY "NO.") THEN LAG("Name",2) OVER (ORDER BY "NO.")
+        ELSE 	"Name" END AS "Evolution Group",
+    *
+FROM(
+    SELECT
+    	*
+    FROM(
+        SELECT
+            CAST(LTRIM(RIGHT("#",LENGTH("#")-1),'0') AS INT) AS "NO.",
+            "Name",
+            "Total",
+            "HP",
+            "Attack",
+            "Defense",
+            "Special Attack",
+            "Special Defense",
+            "Speed"
+        FROM
+        	RA_PD_2021_WK10_P
+        WHERE NOT CONTAINS("Name",'Mega') AND "NO." <= 386
+        GROUP BY ("Name","Total","HP","Attack","Defense","Special Attack","Special Defense","Speed","NO.")
+    ) AS T1
+    LEFT JOIN
+    		(
+            SELECT
+            	*
+            FROM
+            	RA_PD_2021_WK10_E
+            ) AS T2
+    ON(T1."Name" = T2."Evolving from")
+    GROUP BY ("NO.","Name","Total","Attack","HP","Defense","Special Attack","Special Defense","Speed","Evolving from","Evolving to","Level","Condition","Evolution Type")
+    ORDER BY "NO."
+)

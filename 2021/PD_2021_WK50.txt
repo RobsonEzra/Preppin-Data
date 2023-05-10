@@ -1,0 +1,73 @@
+WITH OCT AS (
+    SELECT
+        *
+    FROM(
+        SELECT
+            "RowID",
+            "Date",
+            LEAD("Salesperson") IGNORE NULLS OVER (ORDER BY "RowID" ASC) AS "Salesperson",
+            "Road",
+            "Gravel",
+            "Mountain",
+            LEAD("F8") IGNORE NULLS OVER (ORDER BY "RowID") AS "YTD Total"
+        FROM
+            "RA_PD_2021_WK50_Oct"
+        )
+        UNPIVOT ("Sales" FOR "Bike Type" IN ("Road","Gravel","Mountain"))
+),
+
+NOV AS(
+        SELECT
+            *,
+            SUM("Sales") OVER (PARTITION BY "Salesperson") AS "Total Nov Sales"
+        FROM(
+            SELECT
+                "RowID",
+                "Date",
+                LEAD("Salesperson") IGNORE NULLS OVER (ORDER BY "RowID" ASC) AS "Salesperson",
+                "Road",
+                "Gravel",
+                "Mountain"
+            FROM
+                "RA_PD_2021_WK50_Nov"
+            )
+            UNPIVOT ("Sales" FOR "Bike Type" IN ("Road","Gravel","Mountain"))
+)
+
+SELECT
+    "Salesperson",
+    "Date",
+    "Bike Type",
+    "Sales",
+    "YTD Total"
+FROM(
+    SELECT
+        *
+    FROM
+        OCT
+    UNION ALL(
+        SELECT
+            NOV."RowID",
+            "Date",
+            "Salesperson",
+            "YTD Total" + "Total Nov Sales" AS "YTD Total",
+            NOV."Bike Type",
+            "Sales"
+        FROM(
+            SELECT
+                "RowID",
+                "YTD Total",
+                "Bike Type"
+            FROM
+                OCT
+            ) AS OCT
+        INNER JOIN(
+                SELECT
+                    *
+                FROM
+                    NOV
+                ) AS NOV
+        ON (OCT."RowID" =  NOV."RowID" AND OCT."Bike Type" = NOV."Bike Type")
+    )
+)
+ORDER BY MONTH("Date") ASC, "Salesperson" ASC,"Date"

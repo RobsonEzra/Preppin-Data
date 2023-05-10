@@ -1,0 +1,38 @@
+SELECT
+	"Latitude",
+    "Longitude",
+    "Medal Ceremony?",
+    "Events Split",
+    "DateTime",
+    OE."Sport",
+    OE."Venue"
+FROM(
+    SELECT
+    	CONTAINS("Events",'Victory Ceremony') AS "Medal Ceremony?",
+        "VALUE" AS "Events Split",
+    		CONCAT(	TO_DATE(
+        			CONCAT(	REGEXP_SUBSTR("Date",'(\\d+?).*',1,1,'e'),
+        				REGEXP_SUBSTR("Date",'.*_(.*)_.*',1,1,'e'),REGEXP_SUBSTR("Date",'.*_.*_(.*)',1,1,'e'))
+            			,'DDMMMMYYYY'),' ',
+                TO_TIME(IFF("Time" ='xx','00:00',"Time"),'HH24:MI')) AS "DateTime",
+                "Sport",
+                "Venue"
+    FROM
+    	(
+        SELECT
+        	*
+        FROM
+        	RA_PD_2021_WK29_OE, LATERAL SPLIT_TO_TABLE("Events",',')
+        )
+) AS OE
+INNER JOIN
+		(
+        	SELECT
+            	"Venue",
+                "Sport",
+                SPLIT_PART("Location",', ',1) AS "Latitude",
+				SPLIT_PART("Location",', ',2) AS "Longitude"
+            FROM
+            	RA_PD_2021_WK29_V
+        ) AS V
+ON(OE."Sport" = V."Sport" AND OE."Venue" = V."Venue")

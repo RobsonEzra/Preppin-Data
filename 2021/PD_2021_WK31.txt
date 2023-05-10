@@ -1,0 +1,14 @@
+SELECT
+    SUM(CAST("WHEELS" AS INT)) + SUM(CAST("TYRES" AS INT)) 
+    + SUM(CAST("SADDLES" AS INT)) + SUM(CAST("BRAKES" AS INT)) AS "Items sold per store",
+    SUM(CAST("WHEELS" AS INT)) AS "WHEELS",
+    SUM(CAST("TYRES" AS INT)) AS "TYRES",
+    SUM(CAST("SADDLES" AS INT)) AS "SADDLES",
+    SUM(CAST("BRAKES" AS INT)) AS "BRAKES",
+    "STORE"
+FROM
+    RA_PD_2021_WK31
+PIVOT (LISTAGG("Number of Items") FOR "Item" IN ('Wheels','Tyres','Saddles','Brakes')) AS P (Date,Store,Status,Wheels,Tyres,Saddles,Brakes)
+WHERE "STATUS" != 'Return to Manufacturer'
+GROUP BY ("STORE")
+ORDER BY "STORE" ASC;

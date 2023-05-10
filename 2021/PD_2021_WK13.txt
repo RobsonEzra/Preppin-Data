@@ -1,0 +1,58 @@
+
+SELECT //OUTPUT 1
+	*
+FROM(
+    SELECT
+    	*,
+        RANK() OVER (ORDER BY "Open Play Goals" DESC) AS "Rank",
+        "Open Play Goals"/"Appearances" AS "Open Play Goals/Game"
+    FROM(
+        SELECT
+        		SUM(CAST("Goals" AS INT) 
+            	- IFF("Penalties scored" IS NULL,0, CAST("Penalties scored" AS INT)) 
+                - IFF("Freekicks scored" IS NULL,0, CAST("Freekicks scored" AS INT)) ) AS "Open Play Goals",
+            SUM(CAST("Goals with right foot" AS INT)) AS "Goals with right foot",
+            SUM(CAST("Goals with left foot" AS INT)) AS "Goals with left foot",
+            "Position",
+            SUM(CAST("Appearances" AS INT)) AS "Appearances",
+            SUM(CAST("Goals" AS INT)) AS "Total Goals",
+            SUM(CAST("Headed goals" AS INT)) AS "Headed goals",
+        	"Name"
+        FROM
+        	RA_PD_2021_WK13
+        WHERE 	"Position" != 'Goalkeeper' AND CAST("Appearances" AS INT) > 0 
+        GROUP BY ("Position","Name")
+    )
+)
+WHERE "Rank" <= 20
+ORDER BY "Rank";
+
+
+
+SELECT //OUTPUT 2
+	*
+FROM(
+    SELECT
+    	*,
+        RANK() OVER (PARTITION BY "Position" ORDER BY "Open Play Goals" DESC) AS "Rank",
+        "Open Play Goals"/"Appearances" AS "Open Play Goals/Game"
+    FROM(
+        SELECT
+        		SUM(CAST("Goals" AS INT) 
+            	- IFF("Penalties scored" IS NULL,0, CAST("Penalties scored" AS INT)) 
+                - IFF("Freekicks scored" IS NULL,0, CAST("Freekicks scored" AS INT)) ) AS "Open Play Goals",
+            SUM(CAST("Goals with right foot" AS INT)) AS "Goals with right foot",
+            SUM(CAST("Goals with left foot" AS INT)) AS "Goals with left foot",
+            "Position",
+            SUM(CAST("Appearances" AS INT)) AS "Appearances",
+            SUM(CAST("Goals" AS INT)) AS "Total Goals",
+            SUM(CAST("Headed goals" AS INT)) AS "Headed goals",
+        	"Name"
+        FROM
+        	RA_PD_2021_WK13
+        WHERE 	"Position" != 'Goalkeeper' AND CAST("Appearances" AS INT) > 0 
+        GROUP BY ("Position","Name")
+    )
+)
+WHERE "Rank" <= 20
+ORDER BY "Position", "Rank";

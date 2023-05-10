@@ -1,0 +1,61 @@
+WITH JT AS(
+    SELECT
+    	"Name",
+        IFF(DAYNAME("Order Date") = 'Mon',CAST("Price" AS INT)*0.5,CAST("Price" AS INT)) AS "Price",
+        T1."ID",
+        "Type",
+        "Customer Name",
+        "Order Date"
+    FROM
+    	(
+            SELECT
+            	"Pizza" AS "Name",
+                "Pizza Price " AS "Price",
+                "Pizza ID" AS "ID",
+                'Pizza' AS "Type"
+            FROM
+            	RA_PD_2021_WK15_M
+            UNION
+            	SELECT
+                	"Pasta",
+                    "Pasta Price",
+                    "Pasta ID",
+                    'Pasta'
+                FROM
+                	RA_PD_2021_WK15_M
+            UNION
+            	SELECT
+                	"House Plates",
+                    "House Plates Prices",
+                    "House Plates ID",
+                    'House Plate'
+                FROM
+                	RA_PD_2021_WK15_M
+    ) AS T1
+    INNER JOIN
+    	(
+            SELECT
+            	"Customer Name",
+                "Order Date",
+                "VALUE" AS "ID"
+            FROM
+            	RA_PD_2021_WK15_O, LATERAL split_to_table("Order",'-')
+        ) AS T2
+    ON(T1."ID" = T2."ID")
+)
+
+
+SELECT //OUTPUT 2
+	"Customer Name",
+    COUNT("ID") AS "Orders"
+FROM
+	JT
+GROUP BY ("Customer Name")
+ORDER BY "Orders" DESC
+LIMIT 1;
+
+SELECT //OUTPUT 1
+	SUM("Price") AS "Price",
+    DAYNAME("Order Date") AS "Weekday"
+FROM JT
+GROUP BY ("Weekday");

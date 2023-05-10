@@ -1,0 +1,27 @@
+SELECT
+    T.*,
+    F.* EXCLUDE("Highest Rank", "Ranking")
+FROM(
+    SELECT
+        *
+    FROM
+        RA_PD_2021_WK38_T
+) AS T
+RIGHT JOIN
+        (
+        SELECT
+            *,
+            DENSE_RANK () OVER (ORDER BY "Trilogy Average" DESC,"Highest Rank" DESC) AS "Ranking"
+        FROM(
+            SELECT
+                ROUND(AVG("Rating") OVER (PARTITION BY "Trilogy Grouping"),1) AS "Trilogy Average",
+                MAX("Rating") OVER (PARTITION BY "Trilogy Grouping") AS "Highest Rank",
+                SPLIT_PART("Number in Series",'/',1) AS "Film Order",
+                "Title",
+                "Rating",
+                SPLIT_PART("Number in Series",'/',2) AS "Total Films in Series"
+            FROM
+                RA_PD_2021_WK38_F
+            )
+        ) AS F
+ON (T."Trilogy Ranking" = F."Ranking")

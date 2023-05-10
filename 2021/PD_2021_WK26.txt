@@ -1,0 +1,12 @@
+
+SELECT
+	* EXCLUDE ("Revenue"),
+    AVG(CAST("Revenue" AS INT)) OVER (	PARTITION BY "Destination" 
+    									ORDER BY TO_DATE("Date",'DD/MM/YYYY') ASC 
+                                        ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING) AS "Rolling Week Avg",
+    SUM(CAST("Revenue" AS INT)) OVER (	PARTITION BY "Destination" 
+    									ORDER BY TO_DATE("Date",'DD/MM/YYYY') ASC 
+                                        ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING) AS "Rolling Week Total"
+FROM
+	RA_PD_2021_WK26
+ORDER BY TO_DATE("Date",'DD/MM/YYYY')

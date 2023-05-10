@@ -1,0 +1,21 @@
+SELECT * FROM RA_PD_2021_WK17;
+
+SELECT
+	REGEXP_SUBSTR("Name, Age, Area of Work",'(.*), .*',1,1,'e') AS "Name",
+    REGEXP_SUBSTR("Name, Age, Area of Work",'.*: (.*)',1,1,'e') AS "Area of Work",
+    "Date",
+    SUM(CAST("Hours" AS INT)) AS "Hours"
+FROM(
+        SELECT 
+        	"Name, Age, Area of Work",
+            "Project",
+            "Date",
+            "Hours"
+        FROM
+        	RA_PD_2021_WK17
+        UNPIVOT("Hours" FOR "Date" IN ("2021-02-01","2021-02-02","2021-02-03","2021-02-04","2021-02-05","2021-02-08",
+        								"2021-02-09","2021-02-10","2021-02-11","2021-02-12"))
+        WHERE "Name, Age, Area of Work" IS NOT NULL
+)
+WHERE "Hours" != 'Annual Leave'
+GROUP BY ("Name","Area of Work","Date")

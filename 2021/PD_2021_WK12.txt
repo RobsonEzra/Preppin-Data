@@ -1,0 +1,75 @@
+WITH CONTINENTS AS(
+SELECT //Continents 
+	"id",
+    REGEXP_SUBSTR("Series-Measure",'.*from (.*)',1,1,'e') AS "Continent",
+    "Hierarchy-Breakdown",
+    "Unit-Detail",
+    "Name" AS "Month",
+    "Value"
+FROM
+	RA_PD_2021_WK12
+WHERE "Value" != 'na' 	AND "Series-Measure" != 'Total tourist arrivals' AND CONTAINS("Series-Measure",'from')
+						AND (CONTAINS("Series-Measure",'Europe') OR CONTAINS("Series-Measure",'Asia') 
+                        OR CONTAINS("Series-Measure",'Africa')
+                        OR CONTAINS("Series-Measure",'Americas') OR CONTAINS("Series-Measure",'Oceania')
+                        OR CONTAINS("Series-Measure",'Middle East'))
+),
+
+COUNTRIES AS(
+    SELECT //Countries
+    	"id",
+        "Series-Measure",
+        "Hierarchy-Breakdown",
+        "Unit-Detail",
+        "Name" AS "Month",
+        "Value",
+        CASE
+        	WHEN CONTAINS("Series-Measure",'Germany') 	OR CONTAINS("Series-Measure",'Italy') OR CONTAINS("Series-Measure",'France')
+            											OR CONTAINS("Series-Measure",'France') OR CONTAINS("Series-Measure",'United Kingdom')
+                                                        OR CONTAINS("Series-Measure",'Russia')THEN 'Europe'
+        	WHEN CONTAINS("Series-Measure",'United States') THEN 'Americas'
+            WHEN CONTAINS("Series-Measure",'India') OR CONTAINS("Series-Measure",'China') THEN 'Asia'
+            WHEN CONTAINS("Series-Measure",'Australia') THEN 'Oceania'
+            ELSE 'UNKNOWN' END AS "Continent"
+    FROM
+    	RA_PD_2021_WK12
+    WHERE "Value" != 'na' 	AND "Series-Measure" != 'Total tourist arrivals' AND CONTAINS("Series-Measure",'from')
+    						AND (NOT CONTAINS("Series-Measure",'Europe') AND NOT CONTAINS("Series-Measure",'Asia') 
+                            AND NOT CONTAINS("Series-Measure",'Africa')
+                            AND NOT CONTAINS("Series-Measure",'Americas') AND NOT CONTAINS("Series-Measure",'Oceania') 
+                            AND NOT CONTAINS("Series-Measure",'Middle East'))
+)
+
+SELECT //Calculate unknown countries & values
+	T2."Continent",
+    IFF(T1."Value" IS NULL,T2."Value",CAST(T2."Value" AS INT) - CAST(T1."Value" AS INT)) AS "Number of Tourists",
+    TO_DATE(T2."Month",'MON-YY') AS "Month",
+    'Unknown' AS "Country"
+FROM(
+    Select
+    	"Continent",
+        "Month",
+        SUM(CAST("Value" AS INT)) AS "Value"
+    FROM
+    	COUNTRIES
+    GROUP BY ("Continent","Month")
+    ) AS T1
+RIGHT JOIN
+		(
+        SELECT
+        	*
+        FROM 
+        	CONTINENTS
+        ) AS T2
+ON (T1."Continent" = T2."Continent" AND T1."Month" = T2."Month")
+UNION //Union back to countries table
+	(
+    SELECT
+    	"Continent",
+        "Value",
+        TO_DATE("Month",'MON-YY') AS "Month",
+    	REGEXP_SUBSTR("Series-Measure",'.* (.*)',1,1,'e')
+    FROM
+    	COUNTRIES
+    )
+ORDER BY "Month" ASC;

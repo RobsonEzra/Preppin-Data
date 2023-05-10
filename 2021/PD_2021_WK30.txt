@@ -1,0 +1,58 @@
+SELECT
+	"Default Position",
+    "Avg Travel from default position",
+    "Avg Travel between trips currently",
+    "Avg Travel from default position" - "Avg Travel between trips currently" AS "Difference"
+FROM(
+    SELECT 
+    	ROUND(AVG("Travel"),2) AS "Avg Travel between trips currently"
+    FROM(
+        SELECT
+        	*,
+            IFF(ABS("To"-"From") + ABS("From"-LAG("To",1) OVER (ORDER BY "ID" ASC)) IS NULL,
+            	ABS("To"-"From"),
+                ABS("To"-"From") + ABS("From"-LAG("To",1) OVER (ORDER BY "ID" ASC))) AS "Travel"
+        FROM(
+            SELECT
+            	ROW_NUMBER() OVER (ORDER BY "Hour" ASC, "Minute" ASC) AS "ID",
+            	CASE
+                	WHEN "From" = 'G' THEN 0
+                    WHEN "From" = 'B' THEN -1
+                    ELSE CAST("From" AS INT) END AS "From",
+                CASE
+                	WHEN "To" = 'G' THEN 0
+                    WHEN "To" = 'B' THEN -1
+                    ELSE CAST("To" AS INT) END AS "To"
+            FROM
+            	RA_PD_2021_WK30
+            )
+		)
+    )AS NDP
+
+CROSS JOIN
+	(
+    SELECT
+    	'G' AS "Default Position",
+    	ROUND(AVG("Travel"),2) AS "Avg Travel from default position"
+    FROM(
+        SELECT
+        	*,
+            IFF(	ABS("To"-"From") + ABS("From"-0) IS NULL,
+            		ABS("To"-"From"),
+                	ABS("To"-"From") + ABS("From"-0) ) AS "Travel"
+        FROM(
+            SELECT
+            	ROW_NUMBER() OVER (ORDER BY "Hour" ASC, "Minute" ASC) AS "ID",
+            	CASE
+                	WHEN "From" = 'G' THEN 0
+                    WHEN "From" = 'B' THEN -1
+                    ELSE CAST("From" AS INT) END AS "From",
+                CASE
+                	WHEN "To" = 'G' THEN 0
+                    WHEN "To" = 'B' THEN -1
+                    ELSE CAST("To" AS INT) END AS "To"
+            FROM
+            	RA_PD_2021_WK30
+        	)
+		)
+    ) AS DP

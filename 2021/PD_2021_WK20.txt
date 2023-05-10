@@ -1,0 +1,56 @@
+SELECT //OUTPUT 1SD
+    ("Mean" + (1*"Standard Deviation")) - ("Mean" - (1*"Standard Deviation")) AS "Variation",
+    IFF(	"Complaints"<"Mean" - (1*"Standard Deviation") OR 
+    		"Complaints">"Mean" + (1*"Standard Deviation"),'Outside','Inside') AS "Outlier?(1SD)",
+    "Mean" + (1*"Standard Deviation") AS "Upper Control Limit",
+    "Mean" - (1*"Standard Deviation") AS "Lower Control Limit",
+	*
+FROM(
+    SELECT
+        STDDEV("Complaints") OVER (PARTITION BY "Week") AS "Standard Deviation",
+        AVG(CAST("Complaints" AS INT)) OVER (PARTITION BY "Week") AS "Mean",
+        "Department",
+    	"Week",
+        "Complaints"
+    FROM
+    	RA_PD_2021_WK20
+)
+WHERE "Outlier?(1SD)" = 'Outside';
+
+SELECT //OUTPUT 2SD
+    ("Mean" + (2*"Standard Deviation")) - ("Mean" - (2*"Standard Deviation")) AS "Variation",
+    IFF(	"Complaints"<"Mean" - (2*"Standard Deviation") OR 
+    		"Complaints">"Mean" + (2*"Standard Deviation"),'Outside','Inside') AS "Outlier?(2SD)",
+    "Mean" + (2*"Standard Deviation") AS "Upper Control Limit",
+    "Mean" - (2*"Standard Deviation") AS "Lower Control Limit",
+	*
+FROM(
+    SELECT
+        STDDEV("Complaints") OVER (PARTITION BY "Week") AS "Standard Deviation",
+        AVG(CAST("Complaints" AS INT)) OVER (PARTITION BY "Week") AS "Mean",
+        "Department",
+    	"Week",
+        "Complaints"
+    FROM
+    	RA_PD_2021_WK20
+)
+WHERE "Outlier?(2SD)" = 'Outside';
+
+SELECT //OUTPUT 3SD
+    ("Mean" + (3*"Standard Deviation")) - ("Mean" - (3*"Standard Deviation")) AS "Variation",
+    IFF(	"Complaints"<"Mean" - (3*"Standard Deviation") OR 
+    		"Complaints">"Mean" + (3*"Standard Deviation"),'Outside','Inside') AS "Outlier?(3SD)",
+    "Mean" + (3*"Standard Deviation") AS "Upper Control Limit",
+    "Mean" - (3*"Standard Deviation") AS "Lower Control Limit",
+	*
+FROM(
+    SELECT
+        STDDEV("Complaints") OVER (PARTITION BY "Week") AS "Standard Deviation",
+        AVG(CAST("Complaints" AS INT)) OVER (PARTITION BY "Week") AS "Mean",
+        "Department",
+    	"Week",
+        "Complaints"
+    FROM
+    	RA_PD_2021_WK20
+)
+WHERE "Outlier?(3SD)" = 'Outside';

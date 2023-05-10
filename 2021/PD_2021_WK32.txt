@@ -1,0 +1,17 @@
+SELECT
+    "Flight",
+    "Class",
+    ROUND(AVG(IFF("<7 flag" = FALSE, "Ticket Sales", NULL)),0) AS "Avg. daily sales 7 days or more until the flight",
+    ROUND(AVG(IFF("<7 flag", "Ticket Sales", NULL)),0) AS "Avg. daily sales less than 7 days until the flight",
+    ROUND(SUM(IFF("<7 flag", "Ticket Sales", NULL)),0) AS "Sales less than 7 days until the flight",
+    ROUND(SUM(IFF("<7 flag" = FALSE, "Ticket Sales", NULL)),0) AS "Sales 7 days or more until the flight"
+FROM(
+    SELECT
+        CONCAT("Departure",' to ',"Destination") AS "Flight",
+        DATEDIFF('Days',TO_DATE("Date",'DD/MM/YYYY'),TO_DATE("Date of Flight",'DD/MM/YYYY')) < 7 AS "<7 flag",
+        "Class",
+        CAST("Ticket Sales" AS INT) AS "Ticket Sales"
+    FROM
+        RA_PD_2021_WK32
+)
+GROUP BY ("Flight","Class");

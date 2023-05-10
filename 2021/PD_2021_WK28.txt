@@ -1,0 +1,54 @@
+SELECT
+	DENSE_RANK() OVER (ORDER BY "Total Wins"/"Total Games" DESC) AS "Win % Rank",
+    ROUND(("Total Wins"/"Total Games")*100,0) AS "Win%",
+    "Total Games" AS "Total Shootouts",
+    "Total Wins" AS "Shootout Wins",
+    "Team"
+FROM(
+    SELECT
+    	"Team",
+        "Competition",
+        COUNT("W/L") AS "Total Games",
+        SUM(IFF("W/L" = 'W',1,0)) AS "Total Wins",
+        SUM(IFF("W/L" = 'L',1,0)) AS "Total Losses"
+    FROM(
+            SELECT	
+            	*
+            FROM(
+                SELECT
+                	"Event Year",
+                    'WC' AS "Competition",
+                    "Winner" AS "Team",
+                    'W' AS "W/L"
+                FROM
+                	RA_PD_2021_WK28_WC
+                UNION ALL
+                SELECT
+                	"Event Year",
+                    'WC' AS "Competition",
+                    "Loser",
+                    'L' AS "W/L"
+                FROM
+                	RA_PD_2021_WK28_WC
+                UNION ALL
+                SELECT
+                	"Event Year",
+                    'E' AS "Competition",
+                    "Winner" AS "Team",
+                    'W' AS "W/L"
+                FROM
+                	RA_PD_2021_WK28_E
+                UNION ALL
+                SELECT
+                	"Event Year",
+                    'E' AS "Competition",
+                    "Loser" AS "Team",
+                    'L' AS "W/L"
+                FROM
+                	RA_PD_2021_WK28_E
+            )
+            GROUP BY ("Event Year","Competition","Team","W/L")
+    )
+GROUP BY ("Team","Competition")
+)
+WHERE "Total Wins" > 0

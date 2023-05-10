@@ -1,0 +1,29 @@
+SELECT
+	T1.Quarter,
+    Products Sold,
+    T1.Store,
+    Target
+FROM(
+	SELECT
+    	QUARTER(Date) AS Quarter,
+        SUM(CAST(Products Sold AS INT)) AS Products Sold,
+        Store
+    FROM(
+        SELECT
+        	
+        FROM
+        	RA_PD_2021_WK3
+        UNPIVOT (Products Sold FOR NewExisting IN (New - Saddles,New - Wheels,New - Bags,New - Mudguards,Existing - Saddles,
+        		Existing - Mudguards,Existing - Bags,Existing - Wheels))
+        )
+    GROUP BY(Quarter,Store)
+    ) AS T1
+INNER JOIN
+		(
+			SELECT
+            	
+            FROM
+            	RA_PD_2021_WK4
+        
+        ) AS T2
+ON (T1.Quarter = T2.Quarter AND T1.Store = T2.Store)

@@ -1,0 +1,27 @@
+WITH T (Name,Monthly_Cost,"Date",End_Date) AS(
+    SELECT
+        "Name",
+        "Monthly Cost",
+        "Start Date",
+        DATEADD('Month',"Contract Length (months)"-1,"Start Date")
+    FROM
+        RA_PD_2021_WK37
+    UNION ALL
+            (
+                SELECT
+                    Name,
+                    Monthly_Cost,
+                    DATEADD('Month',1,"Date"),
+                    End_Date
+                FROM T
+                WHERE "Date" < End_Date
+            )
+)
+
+SELECT
+    NAME,
+    "Date" AS "PAYMENT_DATE",
+    MONTHLY_COST,
+    SUM(MONTHLY_COST) OVER (PARTITION BY NAME ORDER BY "Date" ASC) AS "CUMULATIVE_MONTHLY"
+FROM T
+ORDER BY ("NAME","PAYMENT_DATE")

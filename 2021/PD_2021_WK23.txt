@@ -1,0 +1,33 @@
+SELECT
+	"Airline",
+    "NPS",
+    ROUND(("NPS" - "Average NPS")/"STDDEV NPS",2) AS "Z-Score"
+FROM(
+    SELECT
+    	*,
+        ROUND(("Promotor Count"/"Responses Count")*100 - ("Detractor Count"/"Responses Count")*100,0) AS "NPS",
+        AVG(ROUND(("Promotor Count"/"Responses Count")*100 - ("Detractor Count"/"Responses Count")*100,0)) OVER () AS "Average NPS",
+        STDDEV(ROUND(("Promotor Count"/"Responses Count")*100 - ("Detractor Count"/"Responses Count")*100,0)) OVER () AS "STDDEV NPS"
+    FROM(
+        SELECT
+        	*,
+            COUNT("Airline") OVER (PARTITION BY "Airline") AS "Responses Count",
+            SUM(IFF("How likely are you to recommend this airline?" < 7,1,0)) OVER (PARTITION BY "Airline") AS "Detractor Count",
+            SUM(IFF("How likely are you to recommend this airline?" > 8,1,0)) OVER (PARTITION BY "Airline") AS "Promotor Count"
+        FROM
+        	(
+            SELECT
+                	*
+            FROM
+                RA_PD_2021_WK23_A
+            UNION
+            SELECT
+                *
+            FROM
+                RA_PD_2021_WK23_PA
+            )
+        )
+    WHERE "Responses Count" > 50
+)
+WHERE "Airline" =  'Prep Air'
+GROUP BY ("Airline","NPS","Z-Score")

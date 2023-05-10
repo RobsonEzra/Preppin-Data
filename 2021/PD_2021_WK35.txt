@@ -1,0 +1,49 @@
+SELECT * FROM RA_PD_2021_WK35_F;
+SELECT * FROM RA_PD_2021_WK35_P;
+
+SELECT
+    "Picture",
+    "Frame"
+FROM(
+    SELECT
+        "Frame",
+        F."Width" AS "F_Width",
+        F."Height" AS "F_Height",
+        F."Width" * F."Height" AS "F_Area",
+        "Picture",
+        P."Width" AS "P_Width",
+        P."Height" AS "P_Height",
+        P."Width" * P."Height" AS "P_Area",
+        (F."Width" * F."Height") - (P."Width" * P."Height") AS "Area Diff",
+        MIN((F."Width" * F."Height") - (P."Width" * P."Height")) OVER (PARTITION BY "Picture") AS "Min Area Diff"
+    FROM
+        (
+        SELECT
+            "Size" AS "Frame",
+            CASE
+                WHEN CONTAINS("Size",'"') THEN REGEXP_SUBSTR("Size",'(^\\d+?)".*',1,1,'e') * 2.54
+                WHEN CONTAINS("Size",'cm') AND CONTAINS("Size",'x') THEN REGEXP_SUBSTR("Size",'(^\\d+?)cm.*',1,1,'e')
+                ELSE REGEXP_SUBSTR("Size",'(^\\d+?)cm.*',1,1,'e') END AS "Width",
+            CASE
+                WHEN CONTAINS("Size",'"') THEN REGEXP_SUBSTR("Size",'.*x (\\d+?)"',1,1,'e') *2.54
+                WHEN CONTAINS("Size",'cm') AND CONTAINS("Size",'x') THEN REGEXP_SUBSTR("Size",'.*x (\\d+?)cm',1,1,'e')
+                ELSE REGEXP_SUBSTR("Size",'(^\\d+?)cm.*',1,1,'e') END AS "Height"
+        FROM
+            RA_PD_2021_WK35_F
+    ) AS F
+    INNER JOIN(
+        SELECT
+            "Picture",
+            CAST(IFF(CONTAINS("Size",'x'),REGEXP_SUBSTR("Size",'(^\\d+?)cm.*',1,1,'e'),REGEXP_SUBSTR("Size",'(^\\d+?)cm.*',1,1,'e')) AS INT) 
+                AS "Width",
+            CAST(IFF(CONTAINS("Size",'x'),REGEXP_SUBSTR("Size",'.*x (\\d+?)cm',1,1,'e'),REGEXP_SUBSTR("Size",'(^\\d+?)cm.*',1,1,'e')) AS INT)
+                AS "Height"
+        FROM
+            RA_PD_2021_WK35_P
+    ) AS P
+    
+    ON ( (F."Width" >= P."Width" AND F."Height" >= P."Height" ) OR (F."Width" >= P."Height" AND F."Height" >= P."Width") )
+    
+    )
+WHERE "Area Diff" = "Min Area Diff"
+        

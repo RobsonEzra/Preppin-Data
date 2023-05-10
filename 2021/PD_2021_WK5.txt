@@ -1,0 +1,21 @@
+SELECT
+	"Training",
+    "Contact Email",
+    "Contact Name",
+    "Client",
+    "Client ID",
+    "Account Manager",
+    "From Date"
+FROM(
+	SELECT
+    	"Training",
+        "Contact Email",
+        "Contact Name",
+        "Client",
+        "Client ID",
+        "Account Manager",
+        TO_DATE("From Date",'DD/MM/YYYY') AS "From Date",
+        LAST_VALUE("Account Manager") OVER (PARTITION BY "Client" ORDER BY TO_DATE("From Date",'DD/MM/YYYY')ASC) AS "Latest AM"
+    FROM RA_PD_2021_WK5
+)
+WHERE "Latest AM" = "Account Manager";

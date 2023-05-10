@@ -1,0 +1,50 @@
+WITH T AS(
+    SELECT 
+    	*
+    FROM
+    	RA_PD_2021_WK7_SL
+    CROSS JOIN (
+        SELECT
+            	AI."VALUE" AS "Animal Ingredients"
+        FROM
+            	RA_PD_2021_WK7_K , LATERAL split_to_table("Animal Ingredients",', ') AS "AI"
+    )
+)
+
+
+
+
+//NON-VEGAN OUTPUT
+SELECT
+	"Product",
+    "Description",
+    LISTAGG("Animal Ingredients",', ') AS "Contains"
+FROM(
+    SELECT
+    	"Product",
+        "Description",
+        "Ingredients/Allergens",
+        "Animal Ingredients",
+        IFF(CONTAINS("Ingredients/Allergens","Animal Ingredients"),1,0) AS "Flag"
+    FROM
+    	T
+)
+WHERE "Flag" > 0
+GROUP BY ("Product","Description");
+
+
+
+//VEGAN OUTPUT
+SELECT
+	"Product",
+    "Description"
+FROM(
+    SELECT
+    	"Product",
+        "Description",
+        SUM(IFF(CONTAINS("Ingredients/Allergens","Animal Ingredients"),1,0)) AS "Flag"
+    FROM
+    	T
+    GROUP BY ("Product","Description")
+)
+WHERE "Flag" < 1

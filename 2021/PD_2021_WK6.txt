@@ -1,0 +1,52 @@
+SELECT
+	*,
+    "LPGA" - "PGA" AS "Difference between tours"
+FROM(
+    SELECT
+    	'Total Prize Money' AS "MEASURE",
+        SUM("MONEY") AS "VALUE",
+        "TOUR"
+    FROM
+    	RA_PD_2021_WK6
+    GROUP BY ("TOUR")
+    UNION
+    SELECT
+    	'Number of Players' AS "MEASURE",
+        COUNT("PLAYER NAME") AS "VALUE",
+        "TOUR"
+    FROM
+    	RA_PD_2021_WK6
+    GROUP BY ("TOUR")
+    UNION
+    SELECT
+    	'Number of Events' AS "MEASURE",
+        SUM("EVENTS") AS "VALUE",
+        "TOUR"
+    FROM
+    	RA_PD_2021_WK6
+    GROUP BY ("TOUR")
+    UNION
+    SELECT
+    	'Avg Money per Event' AS "MEASURE",
+        ROUND(AVG("MONEY"/"EVENTS")) AS "VALUE",
+        "TOUR"
+    FROM
+    	RA_PD_2021_WK6
+    GROUP BY ("TOUR")
+    UNION
+    SELECT
+    	'Avg Difference in Ranking' AS "MEASURE",
+        AVG("Overall Rank" - "Tour Rank") AS "VALUE",
+        "TOUR"
+    FROM(
+        SELECT
+        	"TOUR",
+            RANK() OVER (PARTITION BY "TOUR" ORDER BY "MONEY" DESC ) AS "Tour Rank",
+            RANK() OVER (ORDER BY "MONEY" DESC) AS "Overall Rank"
+        FROM
+        	RA_PD_2021_WK6
+    )
+    GROUP BY ("TOUR")
+)
+PIVOT (SUM("VALUE") FOR "TOUR" IN ('PGA','LPGA')) AS P (MEASURE,PGA,LPGA)
+ORDER BY "MEASURE";

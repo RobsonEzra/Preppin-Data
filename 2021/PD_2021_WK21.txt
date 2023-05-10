@@ -1,0 +1,24 @@
+SELECT
+	*
+FROM(
+    SELECT
+    	TO_DATE("Date",'DD/MM/YYYY') >'2021-06-01' AS "New Trolley Inventory?",
+        RANK() OVER (	PARTITION BY "Destination",TO_DATE("Date",'DD/MM/YYYY') >'2021-06-01' 
+        				ORDER BY "Price" - "Avg Price per Product" DESC) AS "Variance Rank by Destination",
+        "Price" - "Avg Price per Product" AS "Variance",
+        *
+    FROM(
+        SELECT
+        	AVG(CAST(LTRIM("Price",'$') AS INT)) OVER (PARTITION BY "Product") AS "Avg Price per Product",
+        	CONCAT(LPAD("Day of Month",2,'0'),'/',LPAD("Month",2,0),'/','2021') AS "Date",
+            IFF(CONTAINS("Product",'-'),REGEXP_SUBSTR("Product",'(.*) -.*',1,1,'e'),"Product") AS "Product",
+            CAST(LTRIM("Price",'$') AS FLOAT) AS "Price",
+            "last_name",
+            "first_name",
+            "email",
+            "Destination"
+        FROM
+        	RA_PD_2021_WK21
+    )
+)
+WHERE "Variance Rank by Destination" <= 5 AND "Destination" IS NOT NULL;

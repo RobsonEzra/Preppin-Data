@@ -1,0 +1,52 @@
+WITH Reasons(Name,Start_Date,End_Date,Reason) AS(
+	SELECT
+    	"Name",
+        "Start Date",
+        DATEADD('day',"Days Off","Start Date"),
+        "Reason"
+    FROM
+    	RA_PD_2021_WK24
+    UNION ALL
+    		(
+            	SELECT
+                	Name,
+                    DATEADD('day',1,Start_Date),
+                    End_Date,
+                    Reason
+                FROM
+                	Reasons
+                WHERE Start_Date < End_Date
+            )
+),
+
+Scaffold ("Date") AS(
+	SELECT
+    	'2021-04-01' :: DATE
+    UNION ALL
+    		(
+            	SELECT
+    				DATEADD('day',1,"Date")
+                FROM
+                	Scaffold
+                WHERE "Date" < '2021-05-31'
+            )
+)
+
+SELECT
+	Scaffold."Date",
+    COUNT("NAME") AS "Number of people off each day" 
+FROM(
+    SELECT 
+    	* 
+    FROM Scaffold
+    ) AS Scaffold
+    LEFT JOIN
+    		(
+            SELECT
+            	* EXCLUDE ("END_DATE") RENAME ("START_DATE" AS "Date")
+            FROM
+            	Reasons
+            ) AS Reasons
+ON (Scaffold."Date" =  Reasons."Date")
+GROUP BY (Scaffold."Date")
+ORDER BY "Date" ASC;

@@ -1,0 +1,72 @@
+SELECT //OUTPUT 1
+	RANK() OVER (ORDER BY SUM(CASE
+        						WHEN "Team Goal" > "Op Goal" THEN 3
+            					WHEN "Team Goal" < "Op Goal" THEN 0
+            					ELSE 1 END) DESC , SUM("Team Goal") - SUM("Op Goal") DESC
+        		) AS "Position",
+	COUNT("Round Number") AS "Total Games Played",
+    "Team",
+    SUM("Team Goal") - SUM("Op Goal") AS "Goal Difference",
+    SUM(CASE
+        	WHEN "Team Goal" > "Op Goal" THEN 3
+            WHEN "Team Goal" < "Op Goal" THEN 0
+            ELSE 1 END 
+        )AS "Total Points"
+FROM
+	(
+    SELECT
+    	"Round Number",
+    	"Home Team" AS "Team",
+        CAST(SPLIT_PART("Result",' - ',1)AS INT) AS "Team Goal",
+        CAST(SPLIT_PART("Result",' - ',2)AS INT) AS "Op Goal"
+    FROM
+    	RA_PD_2021_WK16
+    UNION
+    SELECT
+    	"Round Number",
+    	"Away Team" AS "Team",
+        CAST(SPLIT_PART(REVERSE("Result"),' - ',1)AS INT) AS "Team Goal",
+        CAST(SPLIT_PART(REVERSE("Result"),' - ',2)AS INT) AS "Op Goal"
+    FROM
+    	RA_PD_2021_WK16
+)
+GROUP BY ("Team");
+
+SELECT //OUTPUT 2
+	RANK() OVER (ORDER BY SUM(CASE
+        						WHEN "Team Goal" > "Op Goal" THEN 3
+            					WHEN "Team Goal" < "Op Goal" THEN 0
+            					ELSE 1 END) DESC , SUM("Team Goal") - SUM("Op Goal") DESC
+        		) AS "Position",
+	COUNT("Round Number") AS "Total Games Played",
+    "Team",
+    SUM("Team Goal") - SUM("Op Goal") AS "Goal Difference",
+    SUM(CASE
+        	WHEN "Team Goal" > "Op Goal" THEN 3
+            WHEN "Team Goal" < "Op Goal" THEN 0
+            ELSE 1 END 
+        )AS "Total Points"
+FROM
+	(
+    SELECT
+    	"Round Number",
+    	"Home Team" AS "Team",
+        CAST(SPLIT_PART("Result",' - ',1)AS INT) AS "Team Goal",
+        CAST(SPLIT_PART("Result",' - ',2)AS INT) AS "Op Goal"
+    FROM
+    	RA_PD_2021_WK16
+    WHERE 	NOT ARRAY_CONTAINS("Home Team"::VARIANT, ARRAY_CONSTRUCT('Arsenal','Spurs','Man Utd','Man City','Liverpool','Chelsea')) AND
+    		NOT ARRAY_CONTAINS("Away Team"::VARIANT, ARRAY_CONSTRUCT('Arsenal','Spurs','Man Utd','Man City','Liverpool','Chelsea'))
+    
+    UNION
+    SELECT
+    	"Round Number",
+    	"Away Team" AS "Team",
+        CAST(SPLIT_PART(REVERSE("Result"),' - ',1)AS INT) AS "Team Goal",
+        CAST(SPLIT_PART(REVERSE("Result"),' - ',2)AS INT) AS "Op Goal"
+    FROM
+    	RA_PD_2021_WK16
+    WHERE 	NOT ARRAY_CONTAINS("Home Team"::VARIANT, ARRAY_CONSTRUCT('Arsenal','Spurs','Man Utd','Man City','Liverpool','Chelsea')) AND
+    		NOT ARRAY_CONTAINS("Away Team"::VARIANT, ARRAY_CONSTRUCT('Arsenal','Spurs','Man Utd','Man City','Liverpool','Chelsea'))
+)
+GROUP BY ("Team");

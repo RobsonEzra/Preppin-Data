@@ -1,0 +1,41 @@
+SELECT * FROM RA_PD_2021_WK44;
+
+WITH Scaf ("Date") AS (
+    SELECT
+        TO_DATE('2021-01-01')
+    UNION ALL
+        SELECT
+            DATEADD('Day',1,"Date")
+        FROM
+            Scaf
+        WHERE "Date" < '2021-11-01'
+)
+
+
+    SELECT
+        Scaf."Date",
+        COUNT("Value") AS "Activities per day",
+        SUM("Turbo Trainer") AS "Turbo Trainer",
+        SUM("Outdoors") AS "Outdoors"
+    FROM(
+        SELECT
+            *
+        FROM
+            Scaf
+        ) AS Scaf
+        LEFT JOIN
+                (
+                    SELECT
+            "Date",
+            CASE
+                WHEN CONTAINS("Measure",'km') THEN CAST("Value" AS INT) 
+                ELSE 0 END AS "Outdoors",
+            CASE
+                WHEN CONTAINS("Measure",'min') THEN ROUND(CAST("Value" AS INT)/60 * 30,1)
+                ELSE 0 END AS "Turbo Trainer",
+            "Value"
+        FROM
+            RA_PD_2021_WK44
+                ) AS T
+    ON (Scaf."Date" = T."Date")
+    GROUP BY (Scaf."Date");

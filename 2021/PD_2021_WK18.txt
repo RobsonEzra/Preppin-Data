@@ -1,0 +1,48 @@
+WITH T AS(
+SELECT
+	"Project",
+    "Sub-project",
+    UPPER("Task") AS "Task",
+    "Owner",
+    "Scheduled Date",
+    "Completed In Days from Scheduled Date" AS "Days Difference to Schedule",
+    DATEADD('Days',"Completed In Days from Scheduled Date","Scheduled Date") AS "Completed Date"
+FROM
+	RA_PD_2021_WK18
+)
+
+SELECT
+	DAYNAME("Completed Date") AS "Completed Weekday",
+	*
+FROM(
+        SELECT
+        	*
+        FROM(
+              	SELECT
+                	*,
+                    DATEDIFF('Days',"SCOPE","BUILD") AS "Scope to Build Time",
+                    DATEDIFF('Days',"BUILD","DELIVER") AS "Build to Delivery Time"
+                FROM
+                	(
+                    SELECT
+                      "Project",
+                      "Sub-project",
+                      "Owner",
+                      "Completed Date",
+                      "Task"
+                    FROM
+                    	T
+                    )
+                PIVOT (MAX("Completed Date") FOR "Task" IN ('SCOPE','BUILD','DELIVER')) AS P(Project,Sub_Project,Owner,Scope,Build,Deliver)
+            )
+            UNPIVOT ("Completed Dates" FOR "Task" IN(Scope,Build,Deliver))
+         	
+    ) AS PT (Project,Sub_Project,Owner,Scope_To_Build_Time,Build_To_Delivery_Time,Task,Completed_Dates)
+        INNER JOIN
+        			(
+                    SELECT
+                    	*
+                    FROM
+                    	T
+                    ) AS T
+ON(PT.Project= T."Project" AND PT.Sub_Project = T."Sub-project" AND PT.Task=T."Task")

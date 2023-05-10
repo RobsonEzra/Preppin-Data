@@ -1,0 +1,31 @@
+SELECT
+    MAX(T2."Name") AS "Name",
+    MAX(T2."Complaint") AS "Complaint",
+    LISTAGG(IFNULL("Keyword",'Other'),', ') AS "Keyword"
+FROM
+    (
+    SELECT
+        *
+    FROM(
+       SELECT
+            *
+        FROM
+            RA_PD_2021_WK52_C
+        CROSS JOIN(
+            SELECT
+                *
+            FROM    
+                RA_PD_2021_WK52_DR
+                )
+    )
+    WHERE CONTAINS("Complaint",LOWER("Keyword"))
+    ) AS T1
+RIGHT JOIN
+        (
+            SELECT
+                *
+            FROM
+                RA_PD_2021_WK52_C
+        ) AS T2
+ON (T1."Complaint" = T2."Complaint")
+GROUP BY(T2."Name",T2."Complaint")

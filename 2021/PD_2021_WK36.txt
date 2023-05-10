@@ -1,0 +1,64 @@
+SELECT
+    T.*,
+    CB."Country"
+FROM(
+    SELECT
+        "Search Term",
+        IFF("2020/21 avg index" < "2019/20 avg index",'Lockdown Fad','Still trendy') AS "Status",
+        "2020/21 avg index",
+        ROUND(AVG(CAST("Index" AS INT)),1) AS "Avg Index",
+        MAX("Index Peak") AS "Index Peak",
+        MIN("Peak") AS "First Peak"
+        
+    FROM(
+        SELECT
+            *,
+            ROUND(AVG(IFF(TO_DATE("Week") <= '2021-08-31' AND TO_DATE("Week") > '2020-09-01', CAST("Index" AS INT), NULL))
+                OVER (PARTITION BY "Search Term"),1) AS "2020/21 avg index",
+            ROUND(AVG(IFF(TO_DATE("Week") <= '2020-08-31' AND TO_DATE("Week") > '2019-09-01', CAST("Index" AS INT), NULL))
+                OVER (PARTITION BY "Search Term"),1) AS "2019/20 avg index",
+            MAX(CAST("Index" AS INT)) OVER (PARTITION BY "Search Term") AS "Index Peak",
+            IFF(MAX(CAST("Index" AS INT)) OVER (PARTITION BY "Search Term") = CAST("Index" AS INT),TO_DATE("Week"),NULL) AS "Peak"
+        FROM(
+            SELECT
+                "Category: All categories" AS "Week",
+                "F2" AS "Pet adoption",
+                "F3" AS "Online streamer",
+                "F4" AS "Staycation"
+            FROM
+                RA_PD_2021_WK36_T
+            LIMIT NULL OFFSET 2
+        ) 
+        UNPIVOT ("Index" FOR "Search Term" IN ("Pet adoption","Online streamer","Staycation"))
+        ORDER BY TO_DATE("Week") ASC
+    
+    )
+    GROUP BY ("Search Term","Status","2020/21 avg index")
+) AS T
+INNER JOIN
+        (
+            SELECT
+                * EXCLUDE ("Flag")
+            FROM(
+                SELECT
+                    "Country",
+                    "Search Term",
+                    IFF(MAX(CAST("Index" AS FLOAT)) OVER (PARTITION BY "Search Term") = "Index",1,0) AS "Flag"
+                FROM(
+                    SELECT
+                        "Category: All categories" AS "Country",
+                        "F2" AS "Pet adoption",
+                        "F3" AS "Online streamer",
+                        "F4" AS "Staycation"
+                    FROM
+                        RA_PD_2021_WK36_CB
+                    WHERE "F2" IS NOT NULL AND "F3" IS NOT NULL AND "F4" IS NOT NULL
+                    LIMIT NULL OFFSET 1
+
+                )
+                UNPIVOT ("Index" FOR "Search Term" IN ("Pet adoption","Online streamer","Staycation"))
+                )
+            WHERE "Flag" = 1
+        ) AS CB
+ON(T."Search Term" = CB."Search Term")
+ORDER BY "2020/21 avg index" ASC;

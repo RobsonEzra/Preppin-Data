@@ -1,0 +1,46 @@
+SELECT
+    "Name",
+    "Employment Range",
+    "Year" AS "Reporting Year",
+    SUM("Tenure by End of Year") OVER (PARTITION BY "Name" ORDER BY "Year" ASC) AS "Tenure by End of Year",
+    "Salary Paid",
+    "Yearly Bonus",
+    ROUND("Yearly Bonus" + "Salary Paid",0) AS "Total Paid"
+FROM(
+    SELECT
+        "Name",
+        CONCAT(MONTHNAME("Start Date"),' ',YEAR("Start Date"),' to ',MONTHNAME("End Date"),' ',YEAR("End Date")) AS "Employment Range",
+        "Year",
+        "Annual Salary",
+        "Total Sales" * 0.05 AS "Yearly Bonus",
+        "Start Date",
+        "End Date",
+        CASE
+            WHEN YEAR("Start Date") = "Year" THEN ROUND(((1/12)*(13 - MONTH("Start Date"))) * "Annual Salary",0)
+            WHEN YEAR("End Date") = "Year" THEN ROUND((1/12)*(MONTH("End Date")) * "Annual Salary",0)
+            ELSE "Annual Salary" END AS "Salary Paid",
+        CASE
+            WHEN YEAR("Start Date") = "Year" THEN 13 - MONTH("Start Date")
+            WHEN YEAR("End Date") = "Year" THEN (MONTH("End Date"))
+            ELSE 12 END AS "Tenure by End of Year"
+    
+    FROM(
+        SELECT
+            "Name",
+            "Year",
+            MAX(CAST("Annual Salary" AS FLOAT)) AS "Annual Salary",
+            SUM(CAST("Sales" AS FLOAT)) AS "Total Sales",
+            MAX("Start Date") AS "Start Date",
+            MAX("End Date") AS "End Date"
+        FROM(
+            SELECT
+                *,
+                YEAR(TO_DATE("Date",'DD/MM/YYYY'))AS "Year",
+                MIN(TO_DATE("Date",'DD/MM/YYYY')) OVER (PARTITION BY "Name") AS "Start Date",
+                MAX(TO_DATE("Date",'DD/MM/YYYY')) OVER (PARTITION BY "Name") AS "End Date"
+            FROM
+                RA_PD_2021_WK49
+            )
+            GROUP BY ("Name","Year")
+        )
+    )

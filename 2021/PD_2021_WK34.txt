@@ -1,0 +1,38 @@
+
+SELECT
+    "Store",
+    "Employee",
+    "Avg monthly Sales",
+    "% of months target met",
+    "Monthly Target"
+FROM(
+    SELECT
+        *,
+        ROUND(AVG("Sales") OVER (PARTITION BY "Store","Employee"),0) AS "Avg monthly Sales",
+        ROUND(  (SUM(IFF("Sales">"Monthly Target",1,0)) OVER (PARTITION BY "Store","Employee")/
+                COUNT("Sales") OVER (PARTITION BY "Store","Employee"))*100,0) AS "% of months target met"
+    FROM(
+        SELECT
+            ES."Store" AS "Store",
+            ES."Employee" AS "Employee",
+            "Sales",
+            "Monthly Target"
+        FROM(
+            SELECT
+                *
+            FROM
+                RA_PD_2021_WK34_ES
+                UNPIVOT("Sales" FOR "Month" IN("2021-01-01","2021-02-01","2021-03-01","2021-04-01","2021-05-01","2021-06-01","2021-07-01"))
+            ) AS ES
+        INNER JOIN
+                (
+                    SELECT
+                        *
+                    FROM
+                        RA_PD_2021_WK34_ET
+                ) AS ET
+        ON(ES."Store" = ET."Store" AND ES."Employee" = ET."Employee")
+    )
+)
+WHERE "Avg monthly Sales" < (0.9*"Monthly Target")
+GROUP BY ("Store","Employee","Monthly Target","Avg monthly Sales","% of months target met")

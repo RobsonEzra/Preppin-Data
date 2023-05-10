@@ -1,0 +1,28 @@
+
+SELECT
+    MIN("StoreID") OVER (PARTITION BY "Store") AS "StoreID",
+    MIN("CustomerID") OVER (PARTITION BY "Customer") AS "CustomerID",
+    "OrderID",
+    "Order Date",
+    MIN("ProductID") OVER (PARTITION BY "Product Name") AS "ProductID",
+    "Returned",
+    "Quantity",
+    "Sales"
+FROM(
+    SELECT
+        SPLIT_PART("OrderID",'-',1) AS "Store",
+        ROW_NUMBER() OVER (ORDER BY SPLIT_PART("OrderID",'-',1) ) AS "StoreID",
+        SPLIT_PART("OrderID",'-',2) AS "OrderID",
+        "Customer",
+        ROW_NUMBER() OVER (ORDER BY "Customer") AS "CustomerID",
+        "Order Date",
+        "Product Name",
+        ROW_NUMBER() OVER (ORDER BY "Product Name") AS "ProductID",
+        "Quantity",
+        CAST(LTRIM("Unit Price",'£') AS INT) * CAST("Quantity" AS INT) AS "Sales",
+        CASE
+            WHEN "Return State" = 'Return Processed' THEN 1
+            ELSE 0 END AS "Returned"
+    FROM
+        RA_PD_2021_WK51
+    )
