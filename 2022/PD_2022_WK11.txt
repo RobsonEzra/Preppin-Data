@@ -1,0 +1,25 @@
+SELECT
+    *,
+    AVG(ATTENDANCE)  OVER   (
+                            PARTITION BY LESSON_NAME, SUBJECT
+                            ) AS "Avg. Attendance per Subject & Lesson"
+FROM (
+    SELECT
+        WEEKDAY,
+        LESSON_TIME,
+        MAX(LESSON_NAME) AS "LESSON_NAME",
+        MAX(SUBJECT) AS "SUBJECT"
+    FROM RA_PD_2022_WK11
+    GROUP BY (WEEKDAY,LESSON_TIME)
+    ) AS t1
+    INNER JOIN
+    (
+        SELECT
+            WEEKDAY,
+            WEEK,
+            TEACHER,
+            LESSON_TIME,
+            ATTENDANCE
+        FROM RA_PD_2022_WK11
+    ) as t2
+ON(t1."WEEKDAY" = t2."WEEKDAY" AND t1."LESSON_TIME" = t2."LESSON_TIME");

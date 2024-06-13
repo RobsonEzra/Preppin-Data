@@ -1,0 +1,53 @@
+WITH DS AS(
+SELECT //Damage stats
+    "Name",
+    "Category",
+    "Stats",
+    CAST(IFF(REGEXP_SUBSTR("Values",'(.*) .*',1,1,'e') = '-',0,REGEXP_SUBSTR("Values",'(.*) .*',1,1,'e')) AS INT) AS "Attack Damage",
+    CAST(IFF(REGEXP_SUBSTR("Values",'.* (.*)',1,1,'e') = '-',0,REGEXP_SUBSTR("Values",'.* (.*)',1,1,'e')) AS INT) AS "Damage Resistance"
+FROM RA_PD_2022_WK37
+UNPIVOT("Values" FOR "Stats" IN ("Phy","Mag","Fire","Ligh","Holy"))
+),
+
+LR AS(
+SELECT //Level requirements
+    "Name",
+    "Stats",
+    CAST(IFF(REGEXP_SUBSTR("Values",'(.*) .*',1,1,'e') = '-',0,REGEXP_SUBSTR("Values",'(.*) .*',1,1,'e'))  AS INT) AS "Required Level",
+    REGEXP_SUBSTR("Values",'.* (.*)',1,1,'e') AS "Attribute Scaling"
+FROM RA_PD_2022_WK37
+UNPIVOT("Values" FOR "Stats" IN ("Str","Dex","Int","Fai","Arc"))
+)
+SELECT
+        "Name",
+        "Category",
+        "Required Level",
+        "Attack Damage"
+FROM(
+    SELECT
+        DS."Name",
+        DS."Category",
+        "Required Level",
+        "Attack Damage",
+        RANK() OVER (PARTITION BY "Required Level" ORDER BY "Attack Damage" DESC) AS "Rank"
+    FROM(
+            SELECT
+                "Name",
+                "Category",
+                SUM("Attack Damage") AS "Attack Damage"
+            FROM
+                DS
+            GROUP BY("Name","Category")
+        ) AS DS
+        INNER JOIN
+                (
+                SELECT
+                    "Name",
+                    SUM("Required Level") AS "Required Level"
+                FROM LR
+                GROUP BY("Name")
+                ) AS LR
+        ON (DS."Name" = LR."Name")
+    )
+WHERE "Rank" = 1
+ORDER BY "Attack Damage" DESC;

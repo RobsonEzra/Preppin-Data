@@ -1,0 +1,26 @@
+WITH R ("Monthly Payment Date","Store","Remaining Capital to Repay","Monthly Repayment")
+AS(
+    SELECT
+        TO_DATE('2022-08-10'),
+        "Store",
+        CAST("Capital Repayment Remaining" AS INT),
+        CAST("Monthly Payment" AS INT) * CAST("% of Monthly Repayment going to Capital" as INT)/100
+    FROM 
+         RA_PD_2022_WK32
+    UNION ALL
+        (
+            SELECT
+                DATEADD('Month',1,"Monthly Payment Date"),
+                "Store",
+                "Remaining Capital to Repay" - "Monthly Repayment",
+                "Monthly Repayment"
+            FROM R
+            WHERE "Remaining Capital to Repay" > "Monthly Repayment"
+        )
+    )
+
+SELECT 
+    *,
+    SUM("Remaining Capital to Repay") OVER (PARTITION BY "Monthly Payment Date") AS "Capital Outstanding Total"
+FROM 
+    R; //This solution returns an internal engine error? However confident this is the correct solution

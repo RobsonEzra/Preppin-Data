@@ -1,0 +1,35 @@
+ALTER TABLE RA_PD_2022_WK51
+    DROP COLUMN
+        "Field_1",
+        "Supervised",
+        "Industry Experience" ;
+SELECT
+	*,
+    ROUND("Candidates with Preferred Qualifications"/"Total Candidates"*100,1) AS "% of Candidates"
+FROM(
+        SELECT
+        	"Application Month",
+            SUM("Candidate Count") AS "Total Candidates",
+            SUM("Flag") AS "Candidates with Preferred Qualifications"
+        FROM(
+                SELECT
+                	TO_DATE("Application Month",'MMMM YYYY') AS "Application Month",
+                    "Work Experience",
+                    IFF("Number Supervised" IS NULL,0,"Number Supervised") AS "Number Supervised",
+                    "Industry Experience",
+                    "Candidate Count",
+                    IFF("Work Experience" >=4 AND "Number Supervised" > 10 AND "Industry Experience" = 'Yes',1,0) AS "Flag"
+                FROM(
+                        SELECT
+                        	REGEXP_SUBSTR("Work Experience",'.*: (.*), Work Experience.*',1,1,'e') AS "Application Month",
+                            CAST(REGEXP_SUBSTR("Work Experience",'.*Work Experience: (\\d+?)-.*',1,1,'e') AS INT) AS "Work Experience",
+                            REGEXP_SUBSTR("Work Experience",'.*Supervised: (\\d+?)-.*',1,1,'e') AS "Number Supervised",
+                            REGEXP_SUBSTR("Work Experience",'.* Industry Experience: (.*) .*',1,1,'e') AS "Industry Experience",
+                            REGEXP_SUBSTR("Work Experience",'.* Industry Experience:.*(\\d).*',1,1,'e') AS "Candidate Count"
+                        FROM
+                        	RA_PD_2022_WK51
+                        WHERE LENGTH("Work Experience") > 30
+                    )
+            )
+        GROUP BY ("Application Month")
+    );

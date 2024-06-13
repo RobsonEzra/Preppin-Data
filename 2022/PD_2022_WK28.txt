@@ -1,0 +1,42 @@
+
+WITH AD ("All Dates")  //Recursive CTE to generate all dates
+AS
+    (
+    SELECT
+        CAST('2022-01-01' AS DATE)            //Anchor Member
+    UNION ALL
+        (
+            SELECT
+                DATEADD('Day',1,"All Dates")  //Recursive Member
+            FROM AD
+            WHERE "All Dates" < '2022-12-31'   //Termination condition
+        )
+    )
+
+SELECT
+    DECODE(DATE_PART('dayofweek',"All Dates"),
+            0,'Sunday',
+            1,'Monday',
+            2,'Tuesday',
+            3,'Wednesday',
+            4,'Thursday',
+            5,'Friday',
+            6,'Saturday') AS "Day of the Week",
+    COUNT(DATE_PART('dayofweek',"All Dates")) AS "Number of Days"
+FROM
+    (
+    SELECT 
+        * 
+    FROM AD) AS AD
+    LEFT OUTER JOIN  //Join to all Sale Date
+        (
+            Select 
+                TO_DATE(LEFT("Sale Date",10),'DD/MM/YYYY') AS "Sale Date"
+            FROM 
+                RA_PD_2022_WK27
+            GROUP BY ("Sale Date")
+            ORDER BY "Sale Date"
+        ) AS SD
+    ON (AD."All Dates" = SD."Sale Date")
+WHERE "Sale Date" IS NULL     //Filter out days where sales occured
+GROUP BY ("Day of the Week");

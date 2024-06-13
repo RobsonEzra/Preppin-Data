@@ -1,0 +1,50 @@
+CREATE TABLE RA_PD_2022_WK41
+	(
+    	Parameter INT
+    );
+
+    
+INSERT OVERWRITE INTO RA_PD_2022_WK41
+		VALUES (9);						//Change this number to act as parameter
+        
+
+    
+
+WITH GR (FIRST,LAST) //Generate numbers 1-9
+AS
+    (
+        SELECT
+            1,
+            "PARAMETER"
+        FROM RA_PD_2022_WK41
+        UNION ALL
+            (
+                SELECT
+                    "FIRST" + 1,
+                    "LAST"
+                FROM
+                    GR
+                WHERE "FIRST" < "LAST"
+            )
+    )
+    
+SELECT
+    *
+FROM (
+    SELECT // Multiply for results
+        T1."FIRST" AS "Number",
+        T2."FIRST" AS "Number2",
+        T1."FIRST" * T2."FIRST" AS "Result"
+    FROM(    
+        SELECT 
+            "FIRST"
+        FROM GR ) AS T1
+        CROSS JOIN //Cross join numbers (1-9) to itself to match all numbers together
+        (
+            SELECT 
+                "FIRST"
+            FROM GR
+        ) AS T2
+    )
+PIVOT (SUM("Result") FOR "Number2" IN(1,2,3,4,5,6,7,8,9)) AS P(Number) //Pivot table for final output
+ORDER BY "NUMBER" ASC;

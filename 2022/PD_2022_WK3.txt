@@ -1,0 +1,30 @@
+SELECT  "Passed Subjects",
+        "Student's Avg Score",
+        STUDENT_ID AS "Student ID",
+        GENDER AS "Gender"
+FROM(
+        SELECT 
+            GENDER,
+            ID
+        FROM 
+            RA_PD_2022_WK1
+        )AS WK1
+    INNER JOIN( 
+        SELECT 
+            STUDENT_ID,
+            SUM(CASE
+                    WHEN CAST(SCORES AS INT) > 75 THEN 1 
+                    ELSE 0 END) AS "Passed Subjects",
+            ROUND(AVG(CAST(SCORES AS INT)),1) AS "Student's Avg Score"
+        FROM
+        
+                (SELECT *
+                FROM 
+                    RA_PD_2022_WK3
+                UNPIVOT
+                    ("SCORES" FOR "SUBJECT" IN(MATHS,ENGLISH,SPANISH,SCIENCE,ART,HISTORY,GEOGRAPHY))
+                )
+        
+        GROUP BY STUDENT_ID
+    ) AS WK3
+    ON  (WK1.ID = WK3.STUDENT_ID);

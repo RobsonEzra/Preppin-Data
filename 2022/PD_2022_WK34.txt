@@ -1,0 +1,16 @@
+SELECT
+    *
+FROM
+(
+    SELECT
+        RANK() OVER (ORDER BY CAST(SPLIT_PART("Field_5",' - ',2)AS INT) DESC) AS "Rank",
+        SPLIT_PART("Field_5",' - ',1) AS "Coach",
+        SPLIT_PART("Field_5",' - ',2) AS "Calories",
+        INITCAP( SPLIT_PART("Field_5",' - ',3) )AS "Music Type",
+        TO_DATE("Date",'DD/MM/YYYY') AS "Date",
+        "Value" AS "Mins"
+    FROM RA_PD_2022_WK34
+    WHERE "Music Type" = 'Everything Rock' AND "Coach" = 'Kym' //Music Type & Coach Parameters
+)
+WHERE "Rank" <=5 ; //Top N Parameter
+    

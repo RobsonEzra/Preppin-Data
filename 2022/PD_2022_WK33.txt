@@ -1,0 +1,44 @@
+
+ SELECT
+     AVG(TIMEDIFF('Minute',"Previous Order","Sales Date")) AS "Average mins to next sale",
+     "Product Type",
+     "Store"
+FROM (
+        SELECT
+
+            "Sales Date",
+            LAG("Sales Date",1) OVER (  PARTITION BY "Product Type","Store"
+                                        ORDER BY "Sales Date" ASC ) AS "Previous Order",   //LAG function refers to previous row
+                        
+            "Product Type",
+            "Store"
+        FROM (
+                SELECT
+                    TO_TIME(RIGHT("Sales Date",8),'HH24:MI:SS') AS "Sales Date",
+                    "Store",
+                    "ID",
+                    "Product"
+                FROM
+                    RA_PD_2022_WK33_IO
+                UNION
+                    (
+                        SELECT
+                            TO_TIME(RIGHT("Sales Timestamp",8),'HH24:MI:SS'),
+                            'Online' AS "Store",
+                            "ID",
+                            "Product"
+                        FROM
+                            RA_PD_2022_WK33_OO
+                    )
+            ) AS Sales
+        INNER JOIN
+                    (
+                        SELECT
+                            "Product ID",
+                            REGEXP_SUBSTR("Product Name",'(.*) -.*',1,1,'e') AS "Product Type"
+                        FROM
+                            RA_PD_2022_WK33_PL
+                    ) AS PL
+        ON (Sales."Product" = PL."Product ID")
+    )
+GROUP BY ("Store", "Product Type"); //Different answer to solution. However, i disagree with solution!

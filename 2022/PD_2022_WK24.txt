@@ -1,0 +1,50 @@
+SELECT "From","To","Route","Airline","Flight number","Distance - mi","Distance - km","Scheduled duration","Aircraft","First flight","From Lat","From Lng","To Lat", "To Lng" FROM (    
+    SELECT * FROM(    
+            SELECT
+                CASE
+                    WHEN contains("From", '-') THEN regexp_substr("From",'(.*)-.*',1,1,'e')
+                    WHEN contains("From", '/') THEN regexp_substr("From",'(.*)/.*',1,1,'e')
+                    ELSE "From" END AS "From",
+                CASE
+                    WHEN contains("To", '-') THEN regexp_substr("To",'(.*)-.*',1,1,'e')
+                    WHEN contains("To", '/') THEN regexp_substr("To",'(.*)/.*',1,1,'e')
+                    ELSE "To" END AS "To",
+                CONCAT(CASE
+                    WHEN contains("From", '-') THEN regexp_substr("From",'(.*)-.*',1,1,'e')
+                    WHEN contains("From", '/') THEN regexp_substr("From",'(.*)/.*',1,1,'e')
+                    ELSE "From" END,
+                    ' - ',    
+                    CASE
+                    WHEN contains("To", '-') THEN regexp_substr("To",'(.*)-.*',1,1,'e')
+                    WHEN contains("To", '/') THEN regexp_substr("To",'(.*)/.*',1,1,'e')
+                    ELSE "To" END) AS "Route",
+                "Airline",
+                "Flight number",
+                regexp_substr("Distance",'.*\\((.*) mi;.*',1,1,'e') AS "Distance - mi",
+                regexp_substr("Distance",'(.*) km \\(.*',1,1,'e') AS "Distance - km",
+                "Scheduled duration",
+                "Aircraft",
+                "First flight",
+                dense_rank()  OVER (ORDER BY CAST(REPLACE(regexp_substr("Distance",'(.*) km \\(.*',1,1,'e'),',','') AS INT) DESC) AS "Rank"
+            FROM RA_PD_2022_WK24_NSF
+            ORDER BY ("Rank")
+        ) AS NSF
+        INNER JOIN
+        (
+            SELECT
+                "City",
+                "Lat" AS "From Lat",
+                "Lng" AS "From Lng"
+            FROM RA_PD_2022_WK24_WC
+        ) AS WC1
+    ON (NSF."From" = WC1."City")
+) AS NSFWC1
+    INNER JOIN
+    (
+        SELECT
+            "City",
+            "Lat" AS "To Lat",
+            "Lng" AS "To Lng"
+        FROM RA_PD_2022_WK24_WC
+    ) AS WC2
+    ON (NSFWC1."To" = WC2."City");

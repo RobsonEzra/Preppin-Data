@@ -1,0 +1,49 @@
+WITH JT AS(
+SELECT "Correct Size","Scent","Product","Store","Size" FROM
+    (
+        SELECT PS."Size" AS "Correct Size","Scent","Product","Store",S."Size" AS "SizeID" FROM
+            (
+                SELECT
+                    "Size",
+                    "Scent",
+                    REPLACE("Product Code",'S','') AS "Product Code"
+                FROM RA_PD_2022_WK19_PS
+            ) AS PS
+            INNER JOIN
+                (
+                    SELECT
+                        *
+                    FROM RA_PD_2022_WK19_S
+                ) AS S
+            ON(PS."Product Code" = S."Product")
+    ) AS SPS
+    INNER JOIN
+    (
+        SELECT 
+            "Size", 
+            "Size ID" AS "SizeID"
+        FROM RA_PD_2022_WK19_ST
+    )AS ST
+    ON (SPS."SizeID" = ST."SizeID")
+)
+
+
+SELECT          //OUTPUT 2
+    COUNT("Product") AS "Sales with the wrong size",
+    "Product" AS "Product Code",
+    "Correct Size" AS "Product Size",
+    "Scent"
+FROM JT
+WHERE "Correct Size" != "Size"
+GROUP BY ("Product Size","Scent","Product Code");
+
+
+//SWAP SELECT STATEMENT FOR OUTPUT 1 BELOW
+SELECT          //OUTPUT 1
+    "Correct Size" AS "Product Size",
+    "Scent",
+    "Product",
+    "Store"
+FROM JT
+WHERE "Correct Size" = "Size"
+GROUP BY ("Product Size","Scent","Product","Store");

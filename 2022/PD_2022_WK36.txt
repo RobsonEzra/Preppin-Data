@@ -1,0 +1,42 @@
+
+WITH GD ("scheduled_date",END_DATE)
+AS (
+    SELECT
+        TO_DATE(CONCAT(LEFT(MIN( TO_DATE("scheduled_date",'MM/DD/YYYY')) OVER (ORDER BY 1),4),'-01-01'),'YYYY-MM-DD'),
+        TO_DATE(CONCAT(LEFT(MAX( TO_DATE("scheduled_date",'MM/DD/YYYY')) OVER (ORDER BY 1),4),'-12-31'),'YYYY-MM-DD')
+    FROM
+        RA_PD_2022_WK36
+    UNION ALL
+        (
+            SELECT
+                DATEADD('day',1, "scheduled_date"),
+                "END_DATE"
+            FROM GD
+            WHERE "scheduled_date" < "END_DATE"
+        )
+)
+
+SELECT
+    GD1."scheduled_date" AS "scheduled_date",
+    "emp_id",
+    "full_name",
+    "first_name",
+    "last_name",
+    IFF(GD1."scheduled_date" = T."scheduled_date",'True','False') AS "scheduled"
+FROM (
+        SELECT
+            "scheduled_date"
+        FROM GD
+        GROUP BY ("scheduled_date")
+    ) AS GD1
+        CROSS JOIN
+            (
+                SELECT
+                    "emp_id",
+                    "first_name",
+                    "last_name",
+                    TO_DATE("scheduled_date",'MM/DD/YYYY') AS "scheduled_date",
+                    CONCAT("first_name",' ',"last_name") AS "full_name"
+                FROM RA_PD_2022_WK36
+            ) AS T
+GROUP BY(GD1."scheduled_date","emp_id","full_name","first_name","last_name","scheduled");

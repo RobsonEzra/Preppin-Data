@@ -1,0 +1,97 @@
+WITH "Table"  //Joined, unpivoted & filtered Table
+AS (
+        SELECT
+        "Name",
+        "combat_power",
+        "Stage",
+        "row_id"
+
+        FROM(
+                SELECT
+                    t1."name" AS "Name",
+                    "combat_power",
+                    "row_id",
+                    CAST(RIGHT("stage",1)AS INT) AS "Stage",
+                    MAX("Stage")    OVER(
+                                        PARTITION BY "row_id"
+                                    ) AS "Max_Stage",
+                    MIN("Stage")    OVER(
+                                        PARTITION BY "row_id"
+                                    ) AS "Min_Stage"
+                FROM(
+                        SELECT
+                            "name",
+                            SUM(CAST("combat_value" AS INT)) AS "combat_power"
+                        FROM 
+                            RA_PD_2022_WK8_STATS
+                        UNPIVOT("combat_value" FOR "combat_factors" IN("hp","attack","defense","special_attack","special_defence","speed"))
+                        GROUP BY ("name")
+                        )AS t1
+
+                        INNER JOIN(
+                            SELECT
+                                    "row_id",
+                                    "name",
+                                    "stage"
+                                FROM(
+                                            SELECT
+                                                row_number() OVER(
+                                                                ORDER BY ("Stage_1")ASC
+                                                                )AS "row_id",
+                                                *
+                                            FROM RA_PD_2022_WK8_STAGES
+                                            WHERE "Stage_2" IS NOT NULL
+                                    )
+                                UNPIVOT ("name" FOR "stage" IN("Stage_1","Stage_2","Stage_3"))
+                            ) AS t2
+                    ON (t1."name" = t2."name")
+
+
+
+            )
+        WHERE "Stage" = "Min_Stage" OR "Stage" = "Max_Stage"
+)
+
+
+
+
+
+
+SELECT                                              //Following on from WITH clause
+    "First_Stage",
+    "Final_Stage",
+    "Initial_Combat_Power",
+    "Final_Combat_Power",
+    ("Final_Combat_Power"/"Initial_Combat_Power") -1  AS "Combat_Power_Increase"
+FROM(
+        SELECT                                      //Unpivot names by stages to row ID
+            row_id,
+            Stage_1 AS "First_Stage",
+            IFNULL(Stage_2,Stage_3) AS "Final_Stage"
+        FROM(
+                SELECT
+                    "Name",
+                    "Stage",
+                    "row_id"
+                FROM "Table"
+            )
+        PIVOT(Max("Name") FOR "Stage" IN (1,2,3))
+        AS Stages (row_id,Stage_1,Stage_2,Stage_3)
+) AS Stages
+INNER JOIN(
+        SELECT                                          //Unpivot combat_power by stages to row ID
+            row_id,
+            Stage_C1 AS "Initial_Combat_Power",
+            ifnull(Stage_C2, Stage_C3) AS "Final_Combat_Power"
+        FROM(
+                SELECT
+                    "row_id",
+                    "Stage",
+                    "combat_power"
+                FROM "Table"
+            )
+        PIVOT(Max("combat_power") FOR "Stage" IN (1,2,3))
+        AS Combat (row_id,Stage_C1,Stage_C2,Stage_C3)
+) AS Combat
+ON (Stages.row_id = Combat.row_id)                      //Join together Names & Combat Power
+ORDER BY "Combat_Power_Increase" ASC ;

@@ -1,0 +1,13 @@
+SELECT
+	CONCAT(	REGEXP_SUBSTR("Customer",'(\\w).* (\\w).*',1,1,'e',1),
+    		REGEXP_SUBSTR("Customer",'(\\w).* (\\w).*',1,1,'e',2),
+            LPAD("Order Number",6,'0') ) AS "Order ID",
+	"Order Number",
+    "Customer",
+    CASE
+    	WHEN "Order Date" IS NULL AND "Date of Order" IS NULL THEN TO_DATE("Purchase Date",'DD/MM/YYYY')
+        WHEN "Order Date" IS NULL AND "Purchase Date" IS NULL THEN TO_DATE("Date of Order",'DY DD MON YYYY')
+        WHEN "Date of Order" IS NULL AND "Purchase Date" IS NULL THEN TO_DATE("Order Date",'DD/MM/YYYY')
+        END AS "Order Date"
+FROM
+	RA_PD_2022_WK44;

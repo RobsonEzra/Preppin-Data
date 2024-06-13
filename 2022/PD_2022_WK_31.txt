@@ -1,0 +1,11 @@
+SELECT TOP 10 
+    "Store Name",
+     RANK()  OVER (  PARTITION BY "Store Name"
+                    ORDER BY SUM(CAST("Sale Value" AS DOUBLE)) DESC) AS "Rank",
+    "Scent Name",
+    REGEXP_SUBSTR("Product Name",'.*- (.*)',1,1,'e') AS "Size",
+    SUM(CAST("Sale Value" AS DOUBLE)) AS "Sale Value"
+FROM 
+    RA_PD_2022_WK27
+WHERE CONTAINS("Product Name",'L') AND "Store Name" = 'Notting Hill'          //Change where clause to filter to desired Store to obtain the 5 other outputs
+GROUP BY ("Store Name","Scent Name","Size");

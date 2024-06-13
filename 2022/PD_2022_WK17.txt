@@ -1,0 +1,23 @@
+SELECT USERID,TIMESTAMP,LOCATION,S.CONTENT_TYPE,DURATION,AVG_PRICE FROM(
+        SELECT  CAST(USERID AS INT) AS "USERID",
+                CONCAT( CAST(TO_DATE(REPLACE(replace(T,'T','-'),'Z',''),'YYYY-MM-DD-HH:MI:SS') AS string),
+                        ' ',
+                        CAST(TO_TIME(REPLACE(replace(T,'T','-'),'Z',''),'YYYY-MM-DD-HH:MI:SS') AS string)) AS "TIMESTAMP",
+                CONCAT(RIGHT(LEFT(T,7),2),' ',LEFT(T,4)) AS "MONTH",
+                IFF(LOCATION ='Edinurgh','Edinburgh',LOCATION) AS "LOCATION",
+                CASE
+                    WHEN LOCATION = 'London' OR LOCATION = 'Cardiff' OR LOCATION = 'Edinburgh' THEN 'Primary'
+                    WHEN CONTENT_TYPE = 'Preserved' THEN 'Preserved'
+                    ELSE 'Secondary' END AS "CONTENT_TYPE",
+                SUM(DURATION) AS "DURATION"
+        FROM 
+            RA_PD_2022_WK17_S
+        GROUP BY ("USERID","TIMESTAMP","MONTH","LOCATION","CONTENT_TYPE")
+    ) AS S
+    INNER JOIN
+        (
+            SELECT
+                *
+            FROM RA_PD_2022_WK17_AP
+        ) AS AP
+    ON(S."MONTH" = AP."MONTH" AND S."CONTENT_TYPE" = AP."CONTENT_TYPE");

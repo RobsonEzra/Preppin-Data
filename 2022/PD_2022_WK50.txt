@@ -1,0 +1,36 @@
+WITH T AS (
+    SELECT
+    	*, 
+        IFF("status" = 'Candidate Withdrew',LAG("status",1) OVER (PARTITION BY "candidate_id" ORDER BY "Rank" DESC) , "status")AS "status 2"
+    FROM(
+        SELECT
+        	*,
+            RANK() OVER (PARTITION BY "candidate_id" ORDER BY TO_TIMESTAMP("ts",'DD/MM/YYYY HH24:MI:SS') DESC) AS "Rank"
+        FROM
+        	RA_PD_2022_WK50
+        ORDER BY "Rank","candidate_id"
+    )
+)
+
+SELECT
+ 	"status 2" AS "status_before_withdrawal",
+    "withdrawals",
+    "total_in_status",
+    ROUND(CAST("withdrawals" AS INT)/CAST("total_in_status" AS INT)*100,1) AS "pct_withdrawn"
+FROM(
+    SELECT
+    	"status 2",
+        SUM(IFF("status" = 'Candidate Withdrew',1,0)) AS "withdrawals"
+    FROM T
+    GROUP BY ("status 2")
+    ) AS W
+    INNER JOIN
+    		(
+            SELECT
+            	"status",
+                COUNT("status") AS "total_in_status"
+            FROM RA_PD_2022_WK50
+            GROUP BY "status"
+            ) AS TIS
+ON(W."status 2" = TIS."status")
+ORDER BY "status_before_withdrawal";

@@ -1,0 +1,22 @@
+SELECT 
+        CASE
+            WHEN "Method of Travel" LIKE '%W%a%l%k%' THEN 'Sustainable'
+            WHEN "Method of Travel" LIKE '%S%c%o%o%t%er%' THEN 'Sustainable'
+            WHEN "Method of Travel" LIKE '%S%k%i%p%p%e%d%' THEN 'Sustainable'
+            WHEN "Method of Travel" LIKE '%S%h%o%u%l%d%e%r%s%' THEN 'Sustainable'
+            WHEN "Method of Travel" LIKE '%J%u%m%p%e%d%' THEN 'Sustainable'
+            WHEN "Method of Travel" LIKE '%H%o%p%p%e%d%' THEN 'Sustainable'
+            ELSE 'Non-Sustainable' END AS "Sustainable?",
+        "Method of Travel",
+        "Weekday",
+        COUNT(STUDENT_ID) AS "Number of Trips",
+        1000 AS "Trips per day",
+        ROUND(("Number of Trips" / "Trips per day"),2) AS "% of trips per day"
+    FROM
+        (
+            SELECT *
+            FROM
+                RA_PD_2022_WK4
+            UNPIVOT("Method of Travel" FOR "Weekday" IN (M,TU,W,TH,F))
+        )
+    GROUP BY ("Method of Travel","Weekday");  

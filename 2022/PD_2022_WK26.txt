@@ -1,0 +1,46 @@
+WITH Spotify AS(
+    SELECT
+        *,
+        RANK() OVER (PARTITION BY "Year"
+                                ORDER BY "Minutes" DESC) AS "Rank",
+        RANK() OVER (ORDER BY "Minutes" DESC) AS  "Overall Rank"
+    FROM(
+        SELECT
+            "Artist Name",
+            SUM(ROUND(CAST("ms_played" AS FLOAT)/60000,2)) AS "Minutes",
+            LEFT("ts",4) AS "Year"
+        FROM
+            RA_PD_2022_WK26
+        GROUP BY("Artist Name","Year")
+    )
+)
+
+SELECT * FROM(
+        SELECT
+            RANK() OVER (ORDER BY "MINUTES" DESC) AS  "OVERALL_RANK",
+            *
+        FROM(
+                SELECT 
+                        ARTIST_NAME,
+                        MAX(MINUTES) AS "MINUTES",
+                        SUM("2015") AS "2015",
+                        SUM("2016") AS "2016",
+                        SUM("2017") AS "2017",
+                        SUM("2018") AS "2018",
+                        SUM("2019") AS "2019",
+                        SUM("2020") AS "2020",
+                        SUM("2021") AS "2021",
+                        SUM("2022") AS "2022"
+                FROM
+                (
+                    SELECT
+                        *
+                    FROM
+                        SPOTIFY
+                    PIVOT(SUM("Rank") FOR "Year" IN (2015,2016,2017,2018,2019,2020,2021,2022))
+                    AS P (Artist_Name,Minutes,Overall_Rank)
+                )
+                GROUP BY(ARTIST_NAME)
+            )
+        )
+        WHERE "OVERALL_RANK" <= 100;

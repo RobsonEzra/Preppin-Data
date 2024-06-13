@@ -1,0 +1,24 @@
+SELECT
+    *,
+    SUM("%_OF_TOTAL") OVER(ORDER BY ROW_ID) AS "RUNNING_%_TOTAL_SALES"  //Calculates running total: OVER(ORDER BY "ROW_ID")
+FROM(
+
+    SELECT
+        ROW_NUMBER() OVER(ORDER BY "%_OF_TOTAL" DESC) AS "ROW_ID",      //ROW_NUMBER Creates ROW_ID, need to specify order via 'ORDER BY "%_OF_TOTAL"'
+        *
+    FROM(
+        SELECT
+            *,
+            (SALES/SUM(SALES) OVER ())*100 AS "%_OF_TOTAL"
+        FROM(
+            SELECT 
+                CUSTOMER_ID,
+                FIRST_NAME,
+                SURNAME,
+                SUM(CAST(SALES AS FLOAT)) AS "SALES"
+            FROM 
+                RA_PD_2022_WK13
+            GROUP BY (CUSTOMER_ID, FIRST_NAME,SURNAME)
+        )
+        ORDER BY "%_OF_TOTAL" DESC)
+);

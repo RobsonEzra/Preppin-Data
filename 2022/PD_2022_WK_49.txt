@@ -1,0 +1,33 @@
+SELECT //OUTPUT 1
+     "candidate_id",
+     "position_id",
+     "status",
+     "ts",
+     "filename"
+FROM(   
+        SELECT
+            *,
+            TO_DATE(LEFT(RIGHT("filename",23),19),'YYYY-MM-DD_HH-MI-SS') AS "File_Time",
+            MAX(TO_DATE(LEFT(RIGHT("filename",23),19),'YYYY-MM-DD_HH-MI-SS')) 
+                OVER (PARTITION BY "candidate_id","position_id","status") AS "Max_File_Time"
+        FROM 
+            RA_PD_2022_WK49
+    )
+WHERE "Max_File_Time" = "File_Time";
+
+
+SELECT //OUTPUT 2
+     "candidate_id",
+     "position_id",
+     "status" AS "current_status"
+FROM(   
+        SELECT
+            *,
+            TO_DATE(LEFT(RIGHT("filename",23),19),'YYYY-MM-DD_HH-MI-SS') AS "File_Time",
+            MAX(TO_DATE(LEFT(RIGHT("filename",23),19),'YYYY-MM-DD_HH-MI-SS')) 
+                OVER (PARTITION BY "candidate_id","position_id","status") AS "Max_File_Time",
+            COUNT("status") OVER (PARTITION BY "candidate_id","position_id","status") AS "Status_Count"
+        FROM 
+            RA_PD_2022_WK49
+    )
+WHERE "Max_File_Time" = "File_Time" AND "Status_Count" = 1;

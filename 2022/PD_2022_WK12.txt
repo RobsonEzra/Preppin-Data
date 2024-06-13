@@ -1,0 +1,16 @@
+
+Select
+    LEFT(DateSubmitted,4) AS "YEAR",
+    CONCAT("YEAR",' to ' , CAST((CAST("YEAR" AS INT)+1) AS STRING) ) AS "REPORT",
+    EmployerName,
+    EmployerId,
+    EmployerSize,
+    CAST(DiffMedianHourlyPercent AS FLOAT) AS "DIFFMEDIANHOURLYPERCENT",
+    CASE 
+        WHEN "DIFFMEDIANHOURLYPERCENT" < 0 THEN CONCAT('In this orgnaisation, women''s median hourly pay is ',"DIFFMEDIANHOURLYPERCENT",' %',' higher than men''s')
+        WHEN "DIFFMEDIANHOURLYPERCENT" > 0 THEN CONCAT('In this orgnaisation, women''s median hourly pay is ',"DIFFMEDIANHOURLYPERCENT",' %',' lower than men''s')
+        ELSE 'In this organisation, men''s and women''s median hourly pay is equal'
+        END AS "PAY_GAP"
+            
+FROM
+    RA_PD_2022_WK12;

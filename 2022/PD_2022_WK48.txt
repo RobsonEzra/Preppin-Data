@@ -1,0 +1,10 @@
+
+SELECT
+	REGEXP_SUBSTR("event",'.* (\\d+?)',1,1,'e') AS "Event ID",
+    "Game Order",
+	REPLACE(REPLACE( REGEXP_SUBSTR("Competitors",'\\w+\\s\\w+(.*)',1,1,'e'), '(',''),')','') AS "Association",
+    REGEXP_SUBSTR("Competitors",'(\\w+\\s\\w+).*',1,1,'e') AS "Competitor Name",
+    REPLACE("Score",'*','') AS "Score",
+    IFF(CONTAINS("Score",'*'),'TRUE','FALSE') AS "Potout"
+FROM RA_PD_2022_WK48
+UNPIVOT ("Score" FOR "Game Order" IN ("G1","G2","G3","G4","G5","G6","G7","G8"));

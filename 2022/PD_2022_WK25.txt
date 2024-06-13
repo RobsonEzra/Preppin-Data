@@ -1,0 +1,26 @@
+SELECT "Party",G."Adults" AS "Adults in Party",G."Children" AS "Children in Party","Double/Twin","Requires Accessible Room?",IFF(HR."Bath" IS NULL,0,100) AS "Request Satisfaction","Room",HR."Adults",HR."Children" FROM(
+        SELECT
+            *,
+            IFF(contains("Additional Requests",'Bath'),1, 0) AS "Bath",
+            IFF(contains("Additional Requests",'High Floor'),1, 0) AS "High Floor",
+            IFF(contains("Additional Requests",'NOT Near to lift'),1, 0) AS "Not Near to lift",
+            IFF("Double/Twin" = 'Double',1,0) AS "Double",
+            IFF("Double/Twin" = 'Twin',1,0) AS "Twin",
+            IFF("Requires Accessible Room?" = 'Y',1,0) AS "Accessible"
+        FROM
+            RA_PD_2022_WK25_G ) AS G
+        LEFT JOIN
+        (
+         SELECT
+             *,
+            IFF(contains("Features",'Bath'),1, 0) AS "Bath",
+            IFF(contains("Features",'High Floor'),1, 0) AS "High Floor",
+            IFF(contains("Features",'NOT Near to lift'),1, 0) AS "Not Near to lift",
+            IFF(contains("Features",'Double'),1, 0) AS "Double",
+            IFF(contains("Features",'Twin'),1, 0) AS "Twin",
+            IFF(contains("Features",'Accessible'),1, 0) AS "Accessible"
+        FROM
+            RA_PD_2022_WK25_HR
+        ) AS HR
+    ON (G."Bath" <= HR."Bath" AND G."High Floor" <= HR."High Floor" AND G."Not Near to lift" <= HR."Not Near to lift" AND G."Double" = HR."Double" AND G."Twin" = HR."Twin" AND G."Accessible" <=  HR."Accessible" AND G."Adults" <= HR."Adults" AND G."Children" <= HR."Children")
+    ORDER BY "Party";

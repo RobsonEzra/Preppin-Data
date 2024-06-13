@@ -1,0 +1,58 @@
+
+DELETE FROM RA_PD_2022_WK46_W WHERE "Table 4: Store Sales 2022" IS NULL;
+DELETE FROM RA_PD_2022_WK46_W WHERE "Table 4: Store Sales 2022" = 'Store'; //Pre query prep/cleaning performed on all tables
+
+WITH JT AS(
+    SELECT
+    	'London' AS "Region",
+        *
+    FROM RA_PD_2022_WK45
+    UNION
+    SELECT
+    	'Northern' AS "Region",
+        *
+    FROM RA_PD_2022_WK46_N
+    UNION
+    SELECT
+    	'Wales' AS "Region",
+        *
+    FROM RA_PD_2022_WK46_W
+    UNION
+    SELECT
+    	'Scotland' AS "Region",
+        *
+    FROM RA_PD_2022_WK46_S
+),
+
+T AS (
+SELECT
+	"Region",
+	"Store",
+    CONCAT('01/',LPAD(REGEXP_SUBSTR("Sales/Profit",'\\w+_(\\d+?)',1,1,'e'),2,'0'),'/2022') AS "Date",
+    REGEXP_SUBSTR("Sales/Profit",'(\\w+)_\\d+?',1,1,'e') AS "Sales/Profit",
+    "Values"
+FROM(
+                SELECT
+                	"Region",
+                	"Table 1: Store Sales 2022" AS "Store",
+                    CONCAT(IFF(MOD(CAST(REGEXP_SUBSTR("Profit/Sales",'.*_(.*)',1,1,'e')AS INT),2) = 0 
+                    ,'Sales','Profit'),
+                    '_',
+                    	IFF(MOD(CAST(REGEXP_SUBSTR("Profit/Sales",'.*_(.*)',1,1,'e')AS INT),2) = 1,
+                        CAST(CAST(LAG(REGEXP_SUBSTR("Profit/Sales",'.*_(.*)',1,1,'e'),1) OVER (PARTITION BY "Store" ORDER BY
+                        	CAST(REGEXP_SUBSTR("Profit/Sales",'.*_(.*)',1,1,'e')AS INT)) AS INT)-1 AS STRING),
+                        CAST(CAST(REGEXP_SUBSTR("Profit/Sales",'.*_(.*)',1,1,'e') AS INT) -1 AS STRING)
+                        )
+                    ) AS "Sales/Profit",
+                    "Values"
+                FROM JT
+                UNPIVOT ("Values" FOR "Profit/Sales" IN
+        ("Field_2","Field_3","Field_4","Field_5","Field_6","Field_7","Field_8","Field_9","Field_10","Field_11","Field_12","Field_13","Field_14","Field_15","Field_16","Field_17","Field_18","Field_19","Field_20","Field_21"))
+)
+)
+
+
+SELECT
+	*
+FROM T
+PIVOT (SUM("Values") FOR "Sales/Profit" IN ('Sales','Profit')) AS P (Region,Store,Date,Sales,Profit);

@@ -1,0 +1,51 @@
+WITH
+    T1 
+AS
+(
+SELECT  C1,C2,C4,C5,C7,C8,C10,C11,
+        ROW_NUMBER() OVER(ORDER BY C3) AS "ROW_ID"
+FROM    RA_PD_2022_WK16_ORDERS
+),
+
+
+T2 AS(
+        SELECT
+            'Carl' AS "NAME",
+            C1 AS "DISH",
+            C2 AS "CHOICE"
+        FROM T1
+        WHERE ROW_ID > 1
+    UNION ALL
+        SELECT
+            'Tom' AS "NAME",
+            C4 AS "DISH",
+            C5 AS "CHOICE"
+        FROM T1
+        WHERE ROW_ID > 1
+    UNION ALL
+        SELECT
+            'Jenny' AS "NAME",
+            C7 AS "DISH",
+            C8 AS "CHOICE"
+        FROM T1
+        WHERE ROW_ID > 1
+    UNION ALL
+        SELECT
+            'Jonathan' AS "NAME",
+            C10 AS "DISH",
+            C11 AS "CHOICE"
+        FROM T1
+        WHERE ROW_ID > 1
+)
+
+SELECT NAME,RECIPE_ID,ORDERS.DISH FROM(
+    SELECT 
+        NAME,
+        IFF(DISH = 'Starter','Starters',DISH) AS DISH,
+        CHOICE
+    FROM T2) AS ORDERS
+    INNER JOIN(
+    SELECT 
+        *
+    FROM RA_PD_2022_WK16_LT) AS LT
+ON(ORDERS."DISH" = LT."DISH");

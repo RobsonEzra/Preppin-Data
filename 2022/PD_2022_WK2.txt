@@ -1,0 +1,18 @@
+SELECT "Pupil Name","Date of Birth","This Year's Birthday",t1."Month",t1."Cake Needed On",t2."BD's per Weekday and Month" FROM(
+    SELECT
+        CONCAT(PUPIL_FIRST_NAME,' ',PUPIL_LAST_NAME) AS "Pupil Name",
+        CAST(TRIM(DATE_OF_BIRTH) AS DATE) AS "Date of Birth",
+        CAST(CONCAT('2021',RIGHT(CAST(TRIM(DATE_OF_BIRTH)AS DATE),6)) AS DATE) AS "This Year's Birthday",
+        MONTHNAME(CAST(TRIM(DATE_OF_BIRTH) AS DATE)) AS "Month",
+        DAYNAME(CAST(CONCAT('2021',RIGHT(CAST(TRIM(DATE_OF_BIRTH)AS DATE),6)) AS DATE)) AS "Cake Needed On"
+    FROM TIL_DATASCHOOL.DS29.RA_PD_2022_WK1)  AS t1                             //Label first select as t1
+        
+    INNER JOIN( 
+        SELECT
+            MONTHNAME(CAST(TRIM(DATE_OF_BIRTH) AS DATE)) AS "Month",
+            DAYNAME(CAST(CONCAT('2021',RIGHT(CAST(TRIM(DATE_OF_BIRTH)AS DATE),6)) AS DATE)) AS "Cake Needed On",
+            COUNT(PUPIL_FIRST_NAME) AS "BD's per Weekday and Month"
+    FROM TIL_DATASCHOOL.DS29.RA_PD_2022_WK1
+        GROUP BY "Month","Cake Needed On") AS t2                                //Label second select as t2
+            
+ON (t1."Month" = t2."Month" AND t1."Cake Needed On" = t2."Cake Needed On");     //Prefix join with relevent result query (t1/t2)

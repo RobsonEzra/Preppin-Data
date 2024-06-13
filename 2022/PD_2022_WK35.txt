@@ -1,0 +1,52 @@
+
+WITH T1 
+AS(
+    SELECT
+            SPLIT_PART("Field_5",' - ',1) AS "Coach",
+            CAST(SPLIT_PART("Field_5",' - ',2) AS FLOAT) AS "Calories",
+            INITCAP( SPLIT_PART("Field_5",' - ',3) )AS "Music Type",
+            RIGHT("Date",2) AS "Year",
+            CAST(SPLIT_PART("Field_5",' - ',2) AS INT)/CAST("Value" AS INT) AS "KPM",
+            CAST("Value" AS INT) AS "Mins"
+    FROM RA_PD_2022_WK34
+    WHERE "KPM" < 50 //Acts as Speed parameter
+),
+
+T2 AS (
+SELECT DISTINCT
+    CONCAT('20',"Year") AS "Year",
+    CAST(SUM("Mins") OVER ( PARTITION BY "Year" ORDER BY 1) AS STRING) AS "Total Mins",
+    CAST(FIRST_VALUE ("Total Mins per Coach") OVER (PARTITION BY "Year" ORDER BY "Total Mins per Coach (N)" DESC) AS STRING) AS "Total Mins per Coach",
+    CAST(FIRST_VALUE ("Calories per Minute per Coach") OVER (PARTITION BY "Year" ORDER BY "Calories per Minute per Coach (N)" DESC) AS STRING) AS "Calories per Minute per Coach",
+    CAST("Avg. Calories per Ride" AS STRING) AS "Avg. Calories per Ride",
+    CAST("Total Rides" AS STRING) AS "Total Rides",
+    CAST("Total Distance" AS STRING) AS "Total Distance",
+    CAST("Avg. Calories per Minute" AS STRING) AS "Avg. Calories per Minute"
+    
+FROM
+    (
+        SELECT
+            *,
+            SUM("Mins") OVER (PARTITION BY "Coach","Year") AS "Total Mins per Coach (N)",
+            CONCAT("Coach",' (',SUM("Mins") OVER (PARTITION BY "Coach","Year") ,')') AS "Total Mins per Coach",
+            SUM("Calories") OVER (PARTITION BY "Coach","Year") / SUM("Mins") OVER (PARTITION BY "Coach","Year")  AS "Calories per Minute per Coach (N)",
+            CONCAT("Coach",' (',ROUND(SUM("Calories") OVER (PARTITION BY "Coach","Year") / SUM("Mins") OVER (PARTITION BY "Coach","Year"),1) ,')') AS "Calories per Minute per Coach",
+            ROUND(AVG("Calories") OVER (PARTITION BY "Year"),1) AS "Avg. Calories per Ride",
+            COUNT("Coach") OVER (PARTITION BY "Year") AS "Total Rides",
+            ROUND(SUM ("Mins"/60 *"KPM") OVER (PARTITION BY "Year"),1) AS "Total Distance",
+            ROUND(AVG("Calories"/"Mins") OVER (PARTITION BY "Year"),1) AS "Avg. Calories per Minute"
+            
+        FROM T1
+    )
+)
+
+SELECT
+    *
+FROM
+(
+    SELECT 
+        *
+    FROM T2
+    UNPIVOT ("Values" FOR "Measure" IN ("Total Mins","Total Mins per Coach","Calories per Minute per Coach","Avg. Calories per Ride","Total Rides","Total Distance","Avg. Calories per Minute") )
+)
+PIVOT (MAX("Values") FOR "Year" IN (2020,2021,2022)) AS P (Measure);

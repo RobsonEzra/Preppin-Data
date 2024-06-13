@@ -1,0 +1,39 @@
+
+SELECT 
+    "Store Sales Value",
+    ST."Region",
+    ST."Store Name",
+    "Sales Person",
+    "Percent of Store Sales",
+    "Store Sales Value"/100 * CAST("Percent of Store Sales" AS INT) AS "Sales per Person"
+FROM(
+        SELECT
+            * 
+        FROM(
+                SELECT 
+                    * 
+                FROM RA_PD_2022_WK30_T3E
+                UNION
+                SELECT 
+                    * 
+                FROM RA_PD_2022_WK30_T3W
+            ) AS TOP3
+            INNER JOIN
+                (
+                    SELECT
+                        *
+                    FROM RA_PD_2022_WK30_SL
+                ) AS SL
+            ON (TOP3."Store" = SL."StoreID")
+    ) AS TOP3SL
+    INNER JOIN
+        (
+            SELECT
+                SUM (CAST ("Sale Value" AS FLOAT)) AS "Store Sales Value",
+                "Region",
+                "Store Name"
+            FROM RA_PD_2022_WK27
+            GROUP BY ("Region","Store Name")
+        ) AS ST
+ON (TOP3SL."Store Name" = ST."Store Name")
+ORDER BY "StoreID","Sales per Person";

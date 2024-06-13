@@ -1,0 +1,88 @@
+SELECT                                                                                  //Calculate All Columns
+    ROUND(AVG(TOTAL_POINTS_PER_STUDENT) OVER(                                           //Avg points per grade - Can only perform 1 window calc in a select?
+                                      PARTITION BY GRADE,SUBJECT  
+                                        ),2) AS "AVG_STUDENT_TOTAL_POINTS_PER_GRADE",
+    TOTAL_POINTS_PER_STUDENT,
+    GRADE,
+    POINTS,
+    SUBJECT,
+    STUDENT_ID
+FROM(
+    SELECT 
+    SUM(POINTS) OVER(
+                PARTITION BY t1.STUDENT_ID
+                ) AS "TOTAL_POINTS_PER_STUDENT",                                        //Sum total points per student - Can only perform 1 window calc in a select?
+    GRADE,
+    POINTS,
+    SUBJECT,
+    t1.STUDENT_ID
+    FROM(
+        SELECT
+            STUDENT_ID,
+            SUBJECT,
+            CAST(SCORE AS INT) AS "SCORE",
+            ROW_NUMBER()    OVER( 
+                                PARTITION BY SUBJECT 
+                                ORDER BY CAST(SCORE AS INT) ASC) 
+                            AS "ROW_No.",
+            CASE
+                WHEN "ROW_No." <= 1*(1000/6) THEN 'F'
+                WHEN "ROW_No." <= 2*(1000/6) THEN 'E'
+                WHEN "ROW_No." <= 3*(1000/6) THEN 'D'
+                WHEN "ROW_No." <= 4*(1000/6) THEN 'C'
+                WHEN "ROW_No." <= 5*(1000/6) THEN 'B'
+                WHEN "ROW_No." <= 6*(1000/6) THEN 'A'
+                ELSE '' END AS "GRADE",
+            CASE
+                WHEN "ROW_No." <= 1*(1000/6) THEN 1
+                WHEN "ROW_No." <= 2*(1000/6) THEN 2
+                WHEN "ROW_No." <= 3*(1000/6) THEN 4
+                WHEN "ROW_No." <= 4*(1000/6) THEN 6
+                WHEN "ROW_No." <= 5*(1000/6) THEN 8
+                WHEN "ROW_No." <= 6*(1000/6) THEN 10
+                ELSE 0 END AS "POINTS"
+        FROM(
+                    SELECT 
+                        * 
+                    FROM 
+                        RA_PD_2022_WK3
+                    UNPIVOT("SCORE" FOR "SUBJECT" IN (MATHS,ENGLISH,SPANISH,SCIENCE,ART,HISTORY,GEOGRAPHY))
+                    )
+            ) AS t1
+        INNER JOIN(                                                                         //Calculating Max Points (Those with A's) to filter out in Join
+                    SELECT 
+                        STUDENT_ID AS "STUDENT_ID",                                         //Could this be done with IN function?
+                        MAX(POINTS) AS "MAX_POINTS"
+                    FROM(
+                        
+                            SELECT
+                            STUDENT_ID,
+                            SUBJECT,
+                            CAST(SCORE AS INT) AS "SCORE",
+                            ROW_NUMBER()    OVER( 
+                                                PARTITION BY SUBJECT 
+                                                ORDER BY CAST(SCORE AS INT) ASC) 
+                                            AS "ROW_No.",
+                            CASE
+                                WHEN "ROW_No." <= 1*(1000/6) THEN 1
+                                WHEN "ROW_No." <= 2*(1000/6) THEN 2
+                                WHEN "ROW_No." <= 3*(1000/6) THEN 4
+                                WHEN "ROW_No." <= 4*(1000/6) THEN 6
+                                WHEN "ROW_No." <= 5*(1000/6) THEN 8
+                                WHEN "ROW_No." <= 6*(1000/6) THEN 10
+                                ELSE 0 END AS "POINTS"
+                            FROM(
+                                    SELECT 
+                                        * 
+                                    FROM 
+                                        RA_PD_2022_WK3
+                                    UNPIVOT("SCORE" FOR "SUBJECT" IN (MATHS,ENGLISH,SPANISH,SCIENCE,ART,HISTORY,GEOGRAPHY))
+                                )
+                    )
+                    
+                GROUP BY(STUDENT_ID) 
+                HAVING "MAX_POINTS" != 10
+            ) AS t2
+        
+        ON(t1.STUDENT_ID = t2.STUDENT_ID)
+    );

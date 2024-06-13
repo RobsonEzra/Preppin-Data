@@ -1,0 +1,54 @@
+WITH UTA AS(
+SELECT "First Name","Last Name",RSIPA."Email","Online/In Person","Company","Registered Sessions",RSIPA."Session" FROM (
+        SELECT RS."First Name",RS."Last Name","Email","Online/In Person","Company","Registered Sessions",RS."Session" FROM (
+                SELECT "First Name","Last Name","Email","Online/In Person","Company","Registered Sessions","Session"
+                FROM(
+                    SELECT
+                        "First Name",
+                        "Last Name",
+                        "Email",
+                        CASE
+                            WHEN regexp_like("Online/In Person", 'O.*') THEN 'ONLINE'
+                            WHEN regexp_like("Online/In Person", 'I.*') THEN 'IN PERSON'
+                            ELSE "Online/In Person" END AS "Online/In Person",
+                        regexp_substr("Email", '.*@(.*)\\.',1,1,'e') AS "Company",
+                        COUNT("Email") OVER (PARTITION BY "Email") AS "Registered Sessions",
+                        "Session ID"
+                    
+                    FROM 
+                    RA_PD_2022_WK20_R
+                ) AS R
+                INNER JOIN
+                (
+                    SELECT *
+                    FROM RA_PD_2022_WK20_S
+                ) AS S
+                ON (R."Session ID" =  S."Session ID")
+            ) AS RS
+            LEFT OUTER JOIN
+            (
+            SELECT *
+            FROM RA_PD_2022_WK20_IPA
+            ) AS IPA
+        ON(RS."First Name" = IPA."First Name" AND RS."Last Name" = IPA."Last Name" AND RS."Session" = IPA."Session")
+        WHERE IPA."Session" IS NULL
+)AS RSIPA
+LEFT OUTER JOIN
+(
+    SELECT *
+    FROM RA_PD_2022_WK20_OA
+) AS OA
+ON(RSIPA."Session" = OA."Session" AND RSIPA."Email" = OA."Email")
+WHERE OA."Session" IS NULL
+)
+
+SELECT
+        "Company",
+        "First Name",
+        "Last Name",
+        "Email",
+        "Online/In Person",
+        "Session" AS "Session not attended",
+        ROUND(COUNT("Email") OVER (PARTITION BY "Email") / "Registered Sessions"*100,2) AS "Not Attended %"
+        
+    FROM UTA;

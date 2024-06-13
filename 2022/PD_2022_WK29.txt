@@ -1,0 +1,28 @@
+SELECT 
+    IFF("Sale Value" > "TARGET",'True','False') AS "Beats Target?",
+    TARGET AS "Target",
+    "Store Name",
+    "Sale Value",
+    PRODUCT
+FROM(
+    SELECT
+        SUM(CAST("Sale Value" AS FLOAT)) AS "Sale Value",
+        REGEXP_SUBSTR("Product Name",'(.*) -.*',1,1,'e') AS "Product_Name",
+        UPPER("Store Name") AS "Store Name",
+        "Region"
+    FROM 
+        RA_PD_2022_WK27
+    GROUP BY ("Store Name","Region","Product_Name")
+) AS SD
+    
+INNER JOIN 
+    (    
+        SELECT
+            INITCAP("PRODUCT") AS "Product",
+            "STORE_NAME",
+            CAST("TARGET" AS INT) * 1000 AS "TARGET"
+        FROM
+            RA_PD_2022_WK29
+        UNPIVOT ("TARGET" FOR "STORE_NAME" IN ("CHELSEA","DULWICH","LEWISHAM","NOTTING HILL","SHOREDITCH","WIMBLEDON"))
+    )  AS ST (Product,Store_Name,Target)
+ON (SD."Store Name" = ST."STORE_NAME" AND SD."Product_Name" = ST."PRODUCT");

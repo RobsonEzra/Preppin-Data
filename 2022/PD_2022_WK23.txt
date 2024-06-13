@@ -1,0 +1,47 @@
+WITH PVT //Pivoted Table
+AS(
+    SELECT
+        *
+    FROM
+        RA_PD_2022_WK23_O
+    UNPIVOT("Date" FOR "Stage" IN ("CreatedDate","CloseDate"))
+)
+
+
+
+SELECT
+    "OppID",
+    "Date",
+    "Stage", 
+    CASE
+        WHEN "Stage" = 'Opened' THEN 0
+        WHEN "Stage" = 'ExpectedCloseDate' THEN 11
+        ELSE "SortOrder" END AS "SortOrder"
+FROM(
+    Select
+    "Id" AS "OppID",
+    "Date",
+    CASE
+        WHEN "Stage" = 'CloseDate' AND contains("StageName",'Close') THEN "StageName"
+        WHEN "Stage" = 'CloseDate' THEN 'ExpectedCloseDate'
+        ELSE 'Opened' END AS "Stage"
+    FROM PVT
+    UNION ALL
+    (
+        SELECT 
+            "OppID","CreatedDate","StageName"
+        FROM
+            RA_PD_2022_WK23_OH
+    
+    )
+) AS OPVT
+LEFT JOIN
+    (
+        SELECT MAX("StageName") AS "StageName",
+                MAX("SortOrder") AS "SortOrder"
+        FROM  RA_PD_2022_WK23_OH
+        GROUP BY ("StageName")
+    )AS OH
+ON(OPVT."Stage" = OH."StageName")
+GROUP BY ("OppID","Date","Stage","SortOrder")
+ORDER BY("OppID",CAST("SortOrder" AS INT ));

@@ -1,0 +1,23 @@
+SELECT  //OUTPUT 1
+    IFF(CONTAINS(regexp_substr("Product Name",'.*- (.*)',1,1,'e'),'1L'),'1000',regexp_substr("Product Name",'.*- (.*)ml',1,1,'e')) AS "Quantity",
+    "Store Name",
+    "Region",
+    SUM(CAST("Sale Value" AS FLOAT)) AS "Sale Value",
+    COUNT("Order ID") AS "Present in N orders"
+FROM
+    RA_PD_2022_WK27
+WHERE NOT CONTAINS("Product Name",'x')
+GROUP BY ("Quantity","Store Name","Region");
+
+
+
+SELECT  //OUTPUT 2
+    REGEXP_SUBSTR("Product Name",'.*- (.)x',1,1,'e') AS "Quantity", 
+    "Store Name",
+    "Region",
+    SUM(CAST("Sale Value" AS FLOAT)) AS "Sale Value",
+    COUNT("Order ID") AS "Present in N orders"
+FROM
+    RA_PD_2022_WK27
+WHERE CONTAINS("Product Name",'x')
+GROUP BY ("Quantity","Store Name","Region");

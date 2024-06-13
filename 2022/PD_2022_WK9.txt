@@ -1,0 +1,113 @@
+WITH GR (ROW_ID,ORDER_ID,CUSTOMER_NAME,CUSTOMER_ID,First_Purchase,Year) AS    //Set Recursive CTE (GR = Generated Rows)
+(
+    SELECT          //Calculate first purchase      //Anchor Record
+    ROW_ID,
+    ORDER_ID,
+    CUSTOMER_NAME,
+    CUSTOMER_ID,
+    MIN(YEAR (TO_DATE(ORDER_DATE,'DD/MM/YYYY'))) AS "First_Purchase",
+    2018
+    
+FROM RA_PD_2022_WK9
+GROUP BY (ORDER_ID, ROW_ID,CUSTOMER_NAME,CUSTOMER_ID)
+UNION ALL
+    SELECT                                          //Recursive Statement
+        ROW_ID,
+        ORDER_ID,
+        CUSTOMER_NAME,
+        CUSTOMER_ID,
+        First_Purchase,
+        YEAR + 1
+    FROM GR
+    WHERE YEAR < 2021
+),                                                   //Scafolding Complete
+
+
+
+PY ("2018","2019","2020","2021")                       //Second CTE PY (PY = Pivoted Years)
+AS(
+    SELECT 
+            *
+    FROM
+        (
+        SELECT
+            YEAR,
+            COUNT(DISTINCT ORDER_ID) AS "No_Customers"
+        FROM GR
+        WHERE YEAR >= FIRST_PURCHASE
+        GROUP BY (YEAR)                        //Calculating YoY diff
+        )
+    PIVOT (MAX("No_Customers") FOR "YEAR" IN (2018,2019,2020,2021)) AS t1   //Calculate count of orders in years and join back onto GR CTE!
+        
+    )
+
+
+SELECT                       //Join  back to original data set
+    CASE 
+        WHEN t3."YEAR" = "FIRST_PURCHASE"  OR t3."YEAR" = 2018 THEN 'New'
+        WHEN t3."YEAR" > "FIRST_PURCHASE" AND "SHIP_DATE" != null THEN 'Returning'
+        ELSE 'Sleeping' END AS "CUSTOMER_CLASSIFICATION",
+    "YoY Difference",
+    CASE
+        WHEN "SHIP_DATE" != null THEN '1'
+        ELSE 0 END AS "Order?",
+    t3."YEAR",
+    FIRST_PURCHASE,
+    t3."ROW_ID",
+    t3."ORDER_ID",
+    ORDER_DATE,
+    SHIP_DATE,
+    SHIP_MODE,
+    CUSTOMER_NAME,
+    SEGMENT,
+    "Country/Region",
+    CITY,
+    STATE,
+    POSTAL_CODE,
+    REGION,
+    CATEGORY,
+    SALES,
+    QUANTITY,
+    DISCOUNT,
+    PROFIT
+FROM(
+    SELECT                                  //Join two GR & PY to create scafolded rows with YoY differences
+        ROW_ID,
+        ORDER_ID,
+        YEAR,
+        FIRST_PURCHASE,
+        CUSTOMER_ID,
+        CASE                                //Calculate YoY diff from new appended rows from PY
+
+                WHEN "YEAR" = 2018 THEN null
+                WHEN "YEAR" = 2019 THEN "2019" - "2018"
+                WHEN "YEAR" = 2020 THEN "2020" - "2019"
+                WHEN "YEAR" = 2021 THEN "2021" - "2020"
+                ELSE 1 END AS "YoY Difference"
+
+    FROM(
+            SELECT
+                *,
+                1 AS "Append"                       //Add "Append" field to append tables
+            FROM GR
+            WHERE YEAR >= FIRST_PURCHASE
+        )AS t1
+        INNER JOIN(
+            SELECT 
+                *,
+                1 AS "Append"                       //Add "Append" field to append tables
+            FROM PY
+            ) as t2
+
+            ON (t1."Append" = t2."Append")
+) AS t3
+LEFT JOIN
+        (
+        SELECT                              //LEFT Join on ID & Years to keep generate rows
+            *,
+            YEAR (TO_DATE(ORDER_DATE,'DD/MM/YYYY')) AS "YEAR"
+
+        FROM RA_PD_2022_WK9
+            
+        ) AS t4
+ON (t3."CUSTOMER_ID" = t4."CUSTOMER_ID" AND t3."YEAR" = t4."YEAR");

@@ -1,0 +1,76 @@
+WITH GR_E ("Record ID","Employee","GR_COUNT")
+AS
+    (
+        SELECT
+            CAST("Record ID" AS INT),
+            "Employee",
+            1 AS "GR_COUNT"
+        FROM RA_PD_2022_WK39
+        WHERE "Employee" IS NOT NULL
+        UNION ALL
+            (
+                SELECT
+                    "Record ID" + 1,
+                    "Employee",
+                    "GR_COUNT" + 1
+                FROM GR_E
+                WHERE "GR_COUNT" < 10
+            )
+    ),
+
+GR_WL ("Record ID","Work Level","GR_COUNT")
+AS
+    (
+        SELECT
+            CAST("Record ID" AS INT),
+            CAST("Work Level" AS INT),
+            1 AS "GR_COUNT"
+        FROM RA_PD_2022_WK39
+        WHERE "Work Level" IS NOT NULL
+        UNION ALL
+            (
+                SELECT
+                    "Record ID" + 1,
+                    "Work Level",
+                    "GR_COUNT" + 1
+                FROM GR_WL
+                WHERE "GR_COUNT" < 10
+            )
+    )
+SELECT
+    GR."Record ID",
+    "Employee",
+    "Work Level",
+    "Stage",
+    "Date"
+    
+FROM(
+        SELECT
+            GR_WL."Record ID",
+            "Employee",
+            "Work Level"
+        FROM (
+                SELECT 
+                    "Record ID",
+                    MAX("Work Level") AS "Work Level"
+                FROM GR_WL
+                GROUP BY "Record ID" ) AS GR_WL
+                INNER JOIN
+                        (
+                            SELECT
+                                *
+                            FROM GR_E
+                        ) AS GR_E
+                ON(GR_WL."Record ID" = GR_E."Record ID")
+        ) AS GR
+        INNER JOIN
+                (
+                    SELECT
+                        CAST("Record ID" AS INT) AS "Record ID",
+                        "Stage",
+                        "Date"
+                    FROM RA_PD_2022_WK39
+                ) AS T
+    ON(GR."Record ID" = T."Record ID")
+    WHERE (GR."Record ID" < 9 AND "Employee" = 'Andrea') OR (GR."Record ID" >=9 AND GR."Record ID" < 15 AND "Employee" = 'Bobby') OR (GR."Record ID" >=15 AND "Employee" = 'Chloe')
+    ORDER BY GR."Record ID" ASC;

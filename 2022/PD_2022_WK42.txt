@@ -1,0 +1,92 @@
+WITH GD ("AllDates", "MaxDate") //Generate all possible dates
+AS
+	(
+    	SELECT	
+        	MIN(TO_DATE("Date",'YYYY-MM-DD')) OVER (ORDER BY 1),
+            MAX(TO_DATE("Date",'YYYY-MM-DD')) OVER (ORDER BY 1)
+        FROM RA_PD_2022_WK42
+        UNION ALL
+        	(
+            SELECT
+            	DATEADD('Day',1,"AllDates"),
+                "MaxDate"
+            FROM GD
+            WHERE "AllDates" < "MaxDate"
+            )
+    ),
+    
+FT AS (
+        SELECT
+        	GDPL."Player" AS "Player",
+            GDPL."Session" AS "Session",
+            "AllDates" AS "Session Date",
+            IFF("Score" IS NULL, LAG("Score",1) OVER (PARTITION BY GDPL."Player",GDPL."Session" ORDER BY "AllDates"),"Score") AS "Score",
+            IFF("Score" IS NULL,'Carried Over','Actual') AS "Flag"
+            
+        FROM(
+            SELECT 
+            	* 
+            FROM 
+            	(  
+                SELECT 
+                	"AllDates",
+                    DAYNAME("AllDates") AS "WeekendFlag"
+                FROM GD
+                GROUP BY ("AllDates","WeekendFlag")
+                ) AS GD
+                CROSS JOIN //Join all dates to all players
+            		(
+                    	SELECT
+                        	"Player",
+                            "Session"
+                        FROM RA_PD_2022_WK42
+                        GROUP BY ("Player","Session")
+                    ) AS PL
+            	WHERE "WeekendFlag" != 'Sat' AND "WeekendFlag" != 'Sun'
+            ) AS GDPL
+            
+            LEFT JOIN
+            	(
+                	SELECT
+                    	"Player",
+                        "Session",
+                        TO_DATE("Date",'YYYY-MM-DD') AS "Date",
+                        "Score"
+                    FROM
+                    	RA_PD_2022_WK42
+                ) AS T
+        ON(GDPL."AllDates" = T."Date" AND GDPL."Player" = T."Player" AND GDPL."Session" = T."Session")
+        
+        
+    )
+
+
+SELECT * FROM FT; //Answer could be brute forced with multiple Lag queries?
+
+
+//DOES NOT WORK, CAN'T USE WINDOW FUNCTIONS OR GROUP BY IN RECURSIVE TERM
+FT2 ("Player","Session","Session Date","Score","Flag","MinScore") AS(
+    SELECT
+    	"Player",
+        "Session",
+        "Session Date",
+        IFF("Score" IS NULL,0,CAST("Score" AS INT)),
+        "Flag",
+        MIN(CAST("Score" AS INT)) OVER (ORDER BY 1)
+    FROM FT
+    UNION ALL
+    	(
+        	SELECT
+            	"Player",
+                "Session",
+                "Session Date",
+                IFF("Score" = 0, LAG("Score",1) OVER (PARTITION BY "Player","Session" ORDER BY "Session Date"),"Score"),
+                "Flag",
+                MIN(CAST("Score" AS INT)) OVER (ORDER BY 1)
+            FROM FT2
+            WHERE "MinScore" > 0
+            GROUP BY ("Player","Session","Session Date","Score","Flag")
+        )
+)
+
+SELECT * FROM FT2;

@@ -1,0 +1,15 @@
+WITH 
+    T1 
+AS(
+    SELECT 
+        "Region",
+        regexp_substr("Name", '(.*)___.*___.*' , 1 ,1 , 'e') AS "Bike_Type",
+        TO_DATE(regexp_substr("Name", '.*___(.*)___.*' , 1 ,1 , 'e'),'Mon_yy') AS "Month",
+        regexp_substr("Name", '.*___.*___(.*)' , 1 ,1 , 'e') AS "Sales/Profit",
+        "Value"
+
+    FROM RA_PD_2022_WK18
+)
+
+SELECT * FROM T1
+PIVOT(SUM("Value") FOR "Sales/Profit" IN ('Profit','Sales'));
