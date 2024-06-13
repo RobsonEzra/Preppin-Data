@@ -1,0 +1,40 @@
+SELECT
+    AI.*,
+    AH.*EXCLUDE("Account Holder ID"),
+    TP.*,
+    TD.*EXCLUDE("Transaction ID")
+FROM
+    (
+    SELECT
+        *EXCLUDE("Account Holder ID","SEQ","INDEX","VALUE"),
+        "VALUE" AS "Account Holder ID"
+    FROM
+        RA_PD_2023_WK7_AI,
+        LATERAL SPLIT_TO_TABLE("Account Holder ID",', ') 
+    )AS AI
+
+INNER JOIN (
+    SELECT
+        *EXCLUDE ("Contact Number"),
+        CONCAT('0',"Contact Number") AS "Contact Number"
+    FROM
+        RA_PD_2023_WK7_AH
+        ) AS AH
+ON (AI."Account Holder ID" = AH."Account Holder ID")
+INNER JOIN (
+    SELECT
+        "Transaction ID",
+        "Account_To" AS "Account To",
+        "Account_From" AS "Account From"
+    FROM
+        RA_PD_2023_WK7_TP
+) AS TP
+ON (AI."Account Number" = TP."Account To")
+INNER JOIN (
+    SELECT
+        *
+    FROM
+        RA_PD_2023_WK7_TD
+) AS TD
+ON (TP."Transaction ID" = TD."Transaction ID")
+WHERE (TD."Cancelled?" = 'N' AND CAST("Value" AS INT) > 1000 AND AI."Account Type" != 'Platinum')

@@ -1,0 +1,61 @@
+SELECT
+    "Preference",
+    "% of Total"
+FROM(
+    SELECT
+        "Preference",
+        ROUND((COUNT("Preference") OVER (PARTITION BY "Preference") / COUNT("Preference") OVER ())*100,1) AS "% of Total"
+    FROM (
+        SELECT
+            "Customer ID",
+            "Preference"
+        FROM
+            (
+            SELECT
+                *,
+                CASE
+                    WHEN "Difference" >= 2 THEN CONCAT("Mobile App/Online Interface", ' SuperFan')
+                    WHEN "Difference" >= 1 THEN CONCAT("Mobile App/Online Interface", ' Fan')
+                    ELSE 'Neutral' END AS "Preference"
+            FROM(
+                SELECT
+                    *,
+                    CASE
+                        WHEN "Mobile App/Online Interface" = 'Mobile App' THEN "Score" - LAG("Score",-1) OVER (PARTITION BY "Customer ID" ORDER BY "Customer ID","Mobile App/Online Interface")
+                        WHEN  "Mobile App/Online Interface" = 'Online Interface' THEN "Score" - LAG("Score",1) OVER (PARTITION BY "Customer ID" ORDER BY "Customer ID","Mobile App/Online Interface")
+                        ELSE 0 END AS "Difference"
+                FROM(
+                    SELECT
+                        "Customer ID",
+                        "Mobile App/Online Interface",
+                        AVG("Score") AS "Score"
+                    FROM(
+                            SELECT
+                                "Customer ID",
+                                SPLIT_PART("Feature",' - ',1) AS "Mobile App/Online Interface",
+                                SPLIT_PART("Feature",' - ',2) AS "Feature",
+                                "Score"
+                            FROM
+                                RA_PD_2023_WK6
+                                UNPIVOT ("Score" FOR "Feature" IN("Mobile App - Navigation","Mobile App - Ease of Use","Mobile App - Ease of Access","Mobile App - Likelihood to Recommend"))
+                            UNION
+                            SELECT
+                                "Customer ID",
+                                SPLIT_PART("Feature",' - ',1) AS "Mobile App/Online Interface",
+                                SPLIT_PART("Feature",' - ',2) AS "Feature",
+                                "Score"
+                            FROM
+                                RA_PD_2023_WK6
+                                UNPIVOT ("Score" FOR "Feature" IN ("Online Interface - Navigation","Online Interface - Ease of Use","Online Interface - Ease of Access","Online Interface - Likelihood to Recommend"))
+                    )
+                    GROUP BY ("Customer ID","Mobile App/Online Interface")
+                    ORDER BY "Customer ID","Mobile App/Online Interface"
+                )
+            )
+        )
+        WHERE "Difference" >= 0
+        GROUP BY "Customer ID","Preference"
+    )
+)
+GROUP BY "Preference","% of Total"
+ORDER BY "Preference"

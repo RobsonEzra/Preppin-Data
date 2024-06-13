@@ -1,0 +1,26 @@
+SELECT
+    *,
+    RANK() OVER (PARTITION BY "Branch" ORDER BY "Distance Miles" ASC) AS "Customer Priority"
+FROM(
+    SELECT
+        *EXCLUDE("Branch Geog Point","Address Geog Point"),
+        ROUND(ST_DISTANCE("Branch Geog Point","Address Geog Point")/1609,2) AS "Distance Miles"
+    FROM(
+        SELECT
+            *,
+            ST_MAKEPOINT("Branch Long","Branch Lat") AS "Branch Geog Point",
+            ST_MAKEPOINT("Address Long","Address Lat") AS "Address Geog Point"
+        FROM
+            (SELECT
+                *
+            FROM
+                RA_PD_2023_WK11_B) AS B
+        CROSS JOIN
+            (SELECT
+                 *
+                FROM
+                    RA_PD_2023_WK11_CL
+            ) AS CL
+        )
+    )
+ORDER BY "Branch", "Distance Miles" ASC

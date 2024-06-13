@@ -1,0 +1,25 @@
+SELECT
+    Transaction.*,
+    Target.* EXCLUDE("Online or In-Person","Quarter"),
+    "Value" - "Quarterly Targets" AS "Variance to Target"
+FROM(
+    SELECT
+        IFF("Online or In-Person" = '1','Online','In-Person') AS "Online or In-Person",
+        QUARTER(TO_DATE("Transaction Date",'DD/MM/YYYY HH:MI:SS')) AS "Quarter",
+        SUM(CAST("Value" AS INT)) AS "Value"
+    FROM
+        RA_PD_2023_WK1
+    WHERE CONTAINS("Transaction Code",'DSB')
+    GROUP BY ("Online or In-Person","Quarter")
+    ) AS Transaction
+INNER JOIN
+        (
+        SELECT
+            * EXCLUDE("Quarter","Values"),
+            RIGHT("Quarter",1) AS "Quarter",
+            CAST("Values" AS INT) AS "Quarterly Targets"
+        FROM
+            RA_PD_2023_WK3
+        UNPIVOT ("Values" FOR "Quarter" IN ("Q1","Q2","Q3","Q4"))
+        ) AS Target
+ON (Transaction."Quarter" =  Target."Quarter" AND Transaction."Online or In-Person" = Target."Online or In-Person")

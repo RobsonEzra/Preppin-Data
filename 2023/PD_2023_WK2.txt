@@ -1,0 +1,18 @@
+SELECT
+    T."Transaction ID",
+    CONCAT('GB',"Check Digits","SWIFT code",REPLACE(T."Sort Code",'-',''),"Account Number") AS "IBAN"
+FROM
+    (
+        SELECT
+            *
+        FROM
+            RA_PD_2023_WK2_SC
+    ) AS SC
+INNER JOIN
+        (
+            SELECT
+                *
+            FROM
+                RA_PD_2023_WK2_T
+        ) AS T
+ON SC."Bank" = T."Bank"

@@ -1,0 +1,51 @@
+//Output 1
+SELECT
+    "Bank",
+    SUM("Value") AS "Value"
+FROM(
+    SELECT
+        SPLIT_PART("Transaction Code",'-',1) AS "Bank",
+        CAST("Value" AS INT) AS "Value",
+        "Customer Code",
+        IFF("Online or In-Person" = 1,'Online','In-Person') AS "Online or In-Person",
+        DAYNAME(TO_DATE (LEFT("Transaction Date",10), 'DD/MM/YYYY')) AS "Transaction Date"
+    FROM
+        RA_PD_2023_WK1
+)
+GROUP BY "Bank";
+
+//Output 2
+SELECT
+    "Bank",
+    "Online or In-Person",
+    "Transaction Date",
+    SUM("Value") AS "Value"
+FROM(
+    SELECT
+        SPLIT_PART("Transaction Code",'-',1) AS "Bank",
+        CAST("Value" AS INT) AS "Value",
+        "Customer Code",
+        IFF("Online or In-Person" = 1,'Online','In-Person') AS "Online or In-Person",
+        DAYNAME(TO_DATE (LEFT("Transaction Date",10), 'DD/MM/YYYY')) AS "Transaction Date"
+    FROM
+        RA_PD_2023_WK1
+)
+GROUP BY ("Bank","Online or In-Person","Transaction Date");
+
+
+//Output 3
+SELECT
+    "Bank",
+    "Customer Code",
+    SUM("Value") AS "Value"
+FROM(
+    SELECT
+        SPLIT_PART("Transaction Code",'-',1) AS "Bank",
+        CAST("Value" AS INT) AS "Value",
+        "Customer Code",
+        IFF("Online or In-Person" = 1,'Online','In-Person') AS "Online or In-Person",
+        DAYNAME(TO_DATE (LEFT("Transaction Date",10), 'DD/MM/YYYY')) AS "Transaction Date"
+    FROM
+        RA_PD_2023_WK1
+)
+GROUP BY ("Bank", "Customer Code")

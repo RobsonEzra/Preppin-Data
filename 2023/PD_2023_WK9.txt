@@ -1,0 +1,111 @@
+
+SELECT
+    TO_DATE("Balance Date")
+FROM
+    RA_PD_2023_WK7_AI;
+
+WITH JT AS(    
+    SELECT
+        *EXCLUDE("Balance Date","Value","Transaction Date"),
+        TO_DATE("Balance Date") AS "Balance Date",
+        TO_DATE("Transaction Date") AS "Transaction Date",
+        CAST("Value" AS INT) AS "Value"
+    FROM (
+        SELECT
+            TD.*,
+            TP.*EXCLUDE("Transaction ID"),
+            AI.*
+        FROM(
+            SELECT
+                "Transaction ID",
+                "Account_To" AS "Account To",
+                "Account_From" AS "Account From"
+            FROM
+                RA_PD_2023_WK7_TP
+            ) AS TP
+        INNER JOIN
+            (
+                SELECT
+                    *
+                FROM
+                    RA_PD_2023_WK7_TD
+            ) AS TD
+        ON (TD."Transaction ID" = TP."Transaction ID")
+        INNER JOIN
+            (
+                SELECT
+                    *
+                FROM
+                    RA_PD_2023_WK7_AI
+            ) AS AI
+        ON (TP."Account To" = AI."Account Number")
+        WHERE "Cancelled?" ='N'
+        UNION
+                (
+                        SELECT
+                            TD.*,
+                            TP.*EXCLUDE("Transaction ID"),
+                            AI.*
+                        FROM(
+                            SELECT
+                                "Transaction ID",
+                                "Account_To" AS "Account To",
+                                "Account_From" AS "Account From"
+                            FROM
+                                RA_PD_2023_WK7_TP
+                            ) AS TP
+                        INNER JOIN
+                            (
+                                SELECT
+                                    *
+                                FROM
+                                    RA_PD_2023_WK7_TD
+                            ) AS TD
+                        ON (TD."Transaction ID" = TP."Transaction ID")
+                        INNER JOIN
+                            (
+                                SELECT
+                                    *
+                                FROM
+                                    RA_PD_2023_WK7_AI
+                            ) AS AI
+                        ON (TP."Account From" = AI."Account Number")
+                        WHERE "Cancelled?" ='N'
+                )
+            )
+    )
+
+    SELECT
+        *EXCLUDE("Balance"),
+        SUM("Balance") OVER (PARTITION BY "Account Number" ORDER BY "Balance Date","Transaction Value" DESC) AS "Balance"
+    FROM(
+        SELECT
+            *EXCLUDE("Balance"),
+            CASE
+                WHEN "Balance" IS NULL THEN "Transaction Value"
+                ELSE "Balance" END AS "Balance"
+            
+        FROM (
+                SELECT
+                    "Account Number",
+                    "Transaction Date" AS "Balance Date",
+                    CASE
+                        WHEN "Account From" = "Account Number" THEN ("Value" *-1)
+                        ELSE "Value" END AS "Transaction Value",
+                    NULL AS "Balance"
+                FROM
+                    JT
+                UNION ALL
+                    (
+                        SELECT
+                            "Account Number",
+                            TO_DATE("Balance Date") AS "Balance Date",
+                            NULL AS "Transaction Value",
+                            "Balance"
+                        FROM
+                            RA_PD_2023_WK7_AI
+                    )
+            ORDER BY ("Account Number","Balance Date","Transaction Value")
+        )
+    )
+    ORDER BY "Account Number","Balance Date"
